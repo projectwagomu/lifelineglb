@@ -14,6 +14,8 @@ package handist.glb.multiworker;
 import apgas.Configuration;
 import apgas.Constructs;
 import apgas.Place;
+import handist.glb.multiworker.lifeline.MyHypercubeStrategy;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,8 +75,7 @@ public final class GLBMultiWorkerConfiguration<T> {
   public static final GLBMultiWorkerConfiguration<String> GLB_MULTIWORKER_LIFELINESTRATEGY =
       new GLBMultiWorkerConfiguration<>(
           GLB_MULTIWORKER_LIFELINESTRATEGY_PROPERTY,
-          "glb.multiworker.lifeline.MyHypercubeStrategy",
-          //          "glb.multiworker.lifeline.KobeHypercubeStrategy",
+          MyHypercubeStrategy.class.getCanonicalName(),
           String.class);
 
   public static final String GLB_MULTIWORKER_BENCHMARKREPETITIONS_PROPERTY =

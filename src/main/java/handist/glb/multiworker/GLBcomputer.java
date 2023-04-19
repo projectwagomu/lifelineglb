@@ -1289,40 +1289,40 @@ extends PlaceLocalObject {
 		if (mallEnabled /*&& numMallPlaces > 0*/) {
 			mallActive = new AtomicBoolean(false);
 
-			async(
-					() -> {
-						// boolean addPlaces =
-						// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
-						if (isSocketClosed) return;
-						SchedulerMessages message = receiveSchedulerMessage();
-						String behavior = message.getBehavior();
-						int numMallPlaces = message.getNumMallPlaces();
-						List<String> hostnames = message.getHostNames();
-						console.println("behavior = " + behavior);
-
-						List<Integer> newPlaceIDs = null;
-						if (message.getBehaviorAsNum() == 0 /*expand*/) {
-							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
-						}
-
-						while (mallActive.get()) {
-							TimeUnit.MILLISECONDS.sleep(500);
-						}
-
-						if (shutdown) {
-							return;
-						}
-						console.println("malleability starts, addPlaces=" + behavior);
-
-						if (message.getBehaviorAsNum() == 0) {
-							/*add palces*/
-							malleabilityAdd(behavior, newPlaceIDs, numMallPlaces);
-						} else if (message.getBehaviorAsNum() == 1) { // kill places
-							malleabilityShrink(behavior, numMallPlaces);
-							sendRemovedHosts();
-						}
-						malleabilityTestingWithScheduler();
-					});
+//			async(
+//					() -> {
+//						// boolean addPlaces =
+//						GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
+//						if (isSocketClosed) return;
+////						SchedulerMessages message = receiveSchedulerMessage();
+//						String behavior = message.getBehavior();
+//						int numMallPlaces = message.getNumMallPlaces();
+//						List<String> hostnames = message.getHostNames();
+//						console.println("behavior = " + behavior);
+//
+//						List<Integer> newPlaceIDs = null;
+//						if (message.getBehaviorAsNum() == 0 /*expand*/) {
+//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
+//						}
+//
+//						while (mallActive.get()) {
+//							TimeUnit.MILLISECONDS.sleep(500);
+//						}
+//
+//						if (shutdown) {
+//							return;
+//						}
+//						console.println("malleability starts, addPlaces=" + behavior);
+//
+//						if (message.getBehaviorAsNum() == 0) {
+//							/*add palces*/
+//							malleabilityAdd(behavior, newPlaceIDs, numMallPlaces);
+//						} else if (message.getBehaviorAsNum() == 1) { // kill places
+//							malleabilityShrink(behavior, numMallPlaces);
+//							sendRemovedHosts();
+//						}
+//						malleabilityTestingWithScheduler();
+//					});
 		}
 	}
 
@@ -1373,7 +1373,7 @@ extends PlaceLocalObject {
 		for (int shutdownId : shutdownPlacesIDs) {
 			placesToBeRemoved.add(place(shutdownId));
 		}
-		ShutdownMallPlacesBlocking(placesToBeRemoved);
+//		ShutdownMallPlacesBlocking(placesToBeRemoved);
 		// TODO just for experiments no process killing, because hazelcast laggs
 		// Constructs.shutdownMallPlacesBlocking(placesToBeRemoved, true);
 		after = System.nanoTime();
@@ -1410,7 +1410,7 @@ extends PlaceLocalObject {
 						List<Integer> newPlaceIDs = null;
 						// TODO just for experiments
 						if (addPlaces) {
-							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
+//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
 						}
 						long end = System.nanoTime();
 
@@ -1641,21 +1641,21 @@ extends PlaceLocalObject {
 		}
 	}
 
-	private List<Integer> malleabilityEarlyStartNewPlaces(final int numPlacesToAdd) {
-		long start, end;
-		start = System.nanoTime();
-		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
-		List<Integer> newPlaceIDs = startMallPlacesBlocking(numPlacesToAdd, verbose);
-		end = System.nanoTime();
-		console.printlnAlways("malleabilityStartNewPlaces: " + (end - start) / 1e9);
-		return newPlaceIDs;
-	}
-
-	private void ShutdownMallPlacesBlocking(List<Place> shutdownPlacesIDs) {
-		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
-		shutdownMallPlacesBlocking(shutdownPlacesIDs, verbose);
-		console.println("malleablityRemovePlaces");
-	}
+//	private List<Integer> malleabilityEarlyStartNewPlaces(final int numPlacesToAdd) {
+//		long start, end;
+//		start = System.nanoTime();
+//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
+//		List<Integer> newPlaceIDs = startMallPlacesBlocking(numPlacesToAdd, verbose);
+//		end = System.nanoTime();
+//		console.printlnAlways("malleabilityStartNewPlaces: " + (end - start) / 1e9);
+//		return newPlaceIDs;
+//	}
+//
+//	private void ShutdownMallPlacesBlocking(List<Place> shutdownPlacesIDs) {
+//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
+//		shutdownMallPlacesBlocking(shutdownPlacesIDs, verbose);
+//		console.println("malleablityRemovePlaces");
+//	}
 
 	private List<Integer> malleabilityStartNewPlaces(
 			List<Integer> newPlaceIDs, final int numPlacesToAdd) {
