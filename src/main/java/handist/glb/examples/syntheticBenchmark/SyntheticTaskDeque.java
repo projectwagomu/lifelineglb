@@ -253,7 +253,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
 
   public SyntheticTask pollFirst() {
     int h = head;
-    @SuppressWarnings("unchecked")
     SyntheticTask result = elements[h];
     // Element is null if deque empty
     if (result == null) {
@@ -266,7 +265,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
 
   public SyntheticTask pollLast() {
     int t = (tail - 1) & (elements.length - 1);
-    @SuppressWarnings("unchecked")
     SyntheticTask result = elements[t];
     if (result == null) {
       return null;
@@ -278,7 +276,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
 
   /** @throws NoSuchElementException {@inheritDoc} */
   public SyntheticTask getFirst() {
-    @SuppressWarnings("unchecked")
     SyntheticTask result = elements[head];
     if (result == null) {
       throw new NoSuchElementException();
@@ -288,7 +285,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
 
   /** @throws NoSuchElementException {@inheritDoc} */
   public SyntheticTask getLast() {
-    @SuppressWarnings("unchecked")
     SyntheticTask result = elements[(tail - 1) & (elements.length - 1)];
     if (result == null) {
       throw new NoSuchElementException();
@@ -296,13 +292,11 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public SyntheticTask peekFirst() {
     // elements[head] is null if deque empty
     return elements[head];
   }
 
-  @SuppressWarnings("unchecked")
   public SyntheticTask peekLast() {
     return elements[(tail - 1) & (elements.length - 1)];
   }
@@ -669,7 +663,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
    *     the runtime type of every element in this deque
    * @throws NullPointerException if the specified array is null
    */
-  @SuppressWarnings("unchecked")
   public SyntheticTask[] toArray(SyntheticTask[] a) {
     int size = size();
     if (a.length < size) {
@@ -689,7 +682,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
    */
   public SyntheticTaskDeque clone() {
     try {
-      @SuppressWarnings("unchecked")
       SyntheticTaskDeque result = (SyntheticTaskDeque) super.clone();
       result.elements = Arrays.copyOf(elements, elements.length);
       return result;
@@ -755,7 +747,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     return peekFromFirst(n, 0);
   }
 
-  @SuppressWarnings("unchecked")
   public SyntheticTask[] peekFromFirst(int n, int offset) {
     final int toCopy = Math.min(n, this.size() - offset);
     SyntheticTask[] result = new SyntheticTask[toCopy];
@@ -776,7 +767,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public SyntheticTask[] getFromFirst(int n) {
     int toCopy = Math.min(n, this.size());
     if (0 == toCopy) {
@@ -797,11 +787,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     return result;
   }
 
-  //    Own methods
-  //    Top <-> end  <------> First <-> tail
-  //    Bottom <-> start  <------> Last <-> head
-
-  @SuppressWarnings("unchecked")
   public SyntheticTask[] peekFromLast(int n) {
     int toCopy = Math.min(n, this.elements.length);
     SyntheticTask[] result = new SyntheticTask[toCopy];
@@ -814,7 +799,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public SyntheticTask[] getFromLast(int n) {
     int toCopy = Math.min(n, this.elements.length);
     if (0 == toCopy) {
@@ -875,7 +859,8 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
     this.head = 0;
   }
 
-  static final class DeqSpliterator<SyntheticTask> implements Spliterator<SyntheticTask> {
+  @SuppressWarnings("hiding")
+static final class DeqSpliterator<SyntheticTask> implements Spliterator<SyntheticTask> {
 
     private final SyntheticTaskDeque deq;
     private int fence; // -1 until first use
@@ -986,7 +971,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
       if (cursor == fence) {
         throw new NoSuchElementException();
       }
-      @SuppressWarnings("unchecked")
       SyntheticTask result = (SyntheticTask) elements[cursor];
       // This check doesn't catch all possible comodifications,
       // but does catch the ones that corrupt traversal
@@ -1015,7 +999,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
       int m = a.length - 1, f = fence, i = cursor;
       cursor = f;
       while (i != f) {
-        @SuppressWarnings("unchecked")
         SyntheticTask e = (SyntheticTask) a[i];
         i = (i + 1) & m;
         if (e == null) {
@@ -1046,7 +1029,6 @@ public class SyntheticTaskDeque extends AbstractCollection<SyntheticTask>
         throw new NoSuchElementException();
       }
       cursor = (cursor - 1) & (elements.length - 1);
-      @SuppressWarnings("unchecked")
       SyntheticTask result = (SyntheticTask) elements[cursor];
       if (head != fence || result == null) {
         throw new ConcurrentModificationException();

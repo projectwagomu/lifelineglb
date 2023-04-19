@@ -29,7 +29,6 @@ import apgas.util.ConsolePrinter;
 import apgas.util.GlobalID;
 import apgas.util.GlobalRef;
 import apgas.util.PlaceLocalObject;
-import apgas.util.SchedulerMessages;
 import handist.glb.multiworker.lifeline.LifelineStrategy;
 import java.io.Serializable;
 import java.util.ArrayList;
