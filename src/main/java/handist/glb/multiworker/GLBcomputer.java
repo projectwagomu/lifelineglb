@@ -31,6 +31,7 @@ import apgas.util.GlobalRef;
 import apgas.util.PlaceLocalObject;
 import handist.glb.multiworker.lifeline.LifelineStrategy;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,51 +79,44 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /** <R> type of the result produced by the computation <B> type of the computation bag */
 public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable>
-extends PlaceLocalObject {
+extends PlaceLocalObject implements MalleableHandler {
+
 
 	/**
-	 * Handler for the GLB scheme for when malleable orders are received
+	 * When a shrink order is received, the places chosen to be removed are cut off from the
+	 * lifeline network and their work is sent back to remaining places. 
 	 */
-	private static class GlbMalleableHandler implements MalleableHandler {
-		/** Serial version UID */
-		private static final long serialVersionUID = 2664467878141956007L;
-
-		/**
-		 * When a shrink order is received, the places chosen to be removed are cut off from the
-		 * lifeline network and their work is sent back to remaining places. 
-		 */
-		@Override
-		public List<Place> preShrink(int nbPlaces) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		/**
-		 * Nothing in particular needs to be performed before a grow order is put into place
-		 */
-		@Override
-		public void preGrow(int nbPlaces) {
-		}
-
-		/**
-		 * After the reduction in the number of running places, nothing in particular needs to be performed
-		 */
-		@Override
-		public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
-		}
-
-		/**
-		 * After new places were spawned, new GlbComputer instances need to be instanciated on the new places.
-		 * After that, these new places are integrated into the lifeline network so that they can start stealing
-		 * work from the currently running places.
-		 */
-		@Override
-		public void postGrow(int nbPlaces, List<? extends Place> currentPlaces, List<? extends Place> newPlaces) {
-			// TODO Auto-generated method stub
-			
-		}
-		
+	@Override
+	public List<Place> preShrink(int nbPlaces) {
+		// TODO Auto-generated method stub
+		return null;
 	}
+
+	/**
+	 * Nothing in particular needs to be performed before a grow order is put into place
+	 */
+	@Override
+	public void preGrow(int nbPlaces) {
+	}
+
+	/**
+	 * After the reduction in the number of running places, nothing in particular needs to be performed
+	 */
+	@Override
+	public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
+	}
+
+	/**
+	 * After new places were spawned, new GlbComputer instances need to be instanciated on the new places.
+	 * After that, these new places are integrated into the lifeline network so that they can start stealing
+	 * work from the currently running places.
+	 */
+	@Override
+	public void postGrow(int nbPlaces, List<? extends Place> currentPlaces, List<? extends Place> newPlaces) {
+		// TODO Auto-generated method stub
+
+	}
+
 
 	/** Printing Helper */
 	private static final transient ConsolePrinter console = ConsolePrinter.getInstance();
@@ -348,8 +342,8 @@ extends PlaceLocalObject {
 			ls =
 					(LifelineStrategy)
 					Class.forName(GLBMultiWorkerConfiguration.GLB_MULTIWORKER_LIFELINESTRATEGY.get())
-					.newInstance();
-		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+					.getDeclaredConstructor().newInstance();
+		} catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 
@@ -1288,40 +1282,40 @@ extends PlaceLocalObject {
 		if (mallEnabled /*&& numMallPlaces > 0*/) {
 			mallActive = new AtomicBoolean(false);
 
-//			async(
-//					() -> {
-//						// boolean addPlaces =
-//						GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
-//						if (isSocketClosed) return;
-////						SchedulerMessages message = receiveSchedulerMessage();
-//						String behavior = message.getBehavior();
-//						int numMallPlaces = message.getNumMallPlaces();
-//						List<String> hostnames = message.getHostNames();
-//						console.println("behavior = " + behavior);
-//
-//						List<Integer> newPlaceIDs = null;
-//						if (message.getBehaviorAsNum() == 0 /*expand*/) {
-//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
-//						}
-//
-//						while (mallActive.get()) {
-//							TimeUnit.MILLISECONDS.sleep(500);
-//						}
-//
-//						if (shutdown) {
-//							return;
-//						}
-//						console.println("malleability starts, addPlaces=" + behavior);
-//
-//						if (message.getBehaviorAsNum() == 0) {
-//							/*add palces*/
-//							malleabilityAdd(behavior, newPlaceIDs, numMallPlaces);
-//						} else if (message.getBehaviorAsNum() == 1) { // kill places
-//							malleabilityShrink(behavior, numMallPlaces);
-//							sendRemovedHosts();
-//						}
-//						malleabilityTestingWithScheduler();
-//					});
+			//			async(
+			//					() -> {
+			//						// boolean addPlaces =
+			//						GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
+			//						if (isSocketClosed) return;
+			////						SchedulerMessages message = receiveSchedulerMessage();
+			//						String behavior = message.getBehavior();
+			//						int numMallPlaces = message.getNumMallPlaces();
+			//						List<String> hostnames = message.getHostNames();
+			//						console.println("behavior = " + behavior);
+			//
+			//						List<Integer> newPlaceIDs = null;
+			//						if (message.getBehaviorAsNum() == 0 /*expand*/) {
+			//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
+			//						}
+			//
+			//						while (mallActive.get()) {
+			//							TimeUnit.MILLISECONDS.sleep(500);
+			//						}
+			//
+			//						if (shutdown) {
+			//							return;
+			//						}
+			//						console.println("malleability starts, addPlaces=" + behavior);
+			//
+			//						if (message.getBehaviorAsNum() == 0) {
+			//							/*add palces*/
+			//							malleabilityAdd(behavior, newPlaceIDs, numMallPlaces);
+			//						} else if (message.getBehaviorAsNum() == 1) { // kill places
+			//							malleabilityShrink(behavior, numMallPlaces);
+			//							sendRemovedHosts();
+			//						}
+			//						malleabilityTestingWithScheduler();
+			//					});
 		}
 	}
 
@@ -1372,7 +1366,7 @@ extends PlaceLocalObject {
 		for (int shutdownId : shutdownPlacesIDs) {
 			placesToBeRemoved.add(place(shutdownId));
 		}
-//		ShutdownMallPlacesBlocking(placesToBeRemoved);
+		//		ShutdownMallPlacesBlocking(placesToBeRemoved);
 		// TODO just for experiments no process killing, because hazelcast laggs
 		// Constructs.shutdownMallPlacesBlocking(placesToBeRemoved, true);
 		after = System.nanoTime();
@@ -1409,7 +1403,7 @@ extends PlaceLocalObject {
 						List<Integer> newPlaceIDs = null;
 						// TODO just for experiments
 						if (addPlaces) {
-//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
+							//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
 						}
 						long end = System.nanoTime();
 
@@ -1640,21 +1634,21 @@ extends PlaceLocalObject {
 		}
 	}
 
-//	private List<Integer> malleabilityEarlyStartNewPlaces(final int numPlacesToAdd) {
-//		long start, end;
-//		start = System.nanoTime();
-//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
-//		List<Integer> newPlaceIDs = startMallPlacesBlocking(numPlacesToAdd, verbose);
-//		end = System.nanoTime();
-//		console.printlnAlways("malleabilityStartNewPlaces: " + (end - start) / 1e9);
-//		return newPlaceIDs;
-//	}
-//
-//	private void ShutdownMallPlacesBlocking(List<Place> shutdownPlacesIDs) {
-//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
-//		shutdownMallPlacesBlocking(shutdownPlacesIDs, verbose);
-//		console.println("malleablityRemovePlaces");
-//	}
+	//	private List<Integer> malleabilityEarlyStartNewPlaces(final int numPlacesToAdd) {
+	//		long start, end;
+	//		start = System.nanoTime();
+	//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
+	//		List<Integer> newPlaceIDs = startMallPlacesBlocking(numPlacesToAdd, verbose);
+	//		end = System.nanoTime();
+	//		console.printlnAlways("malleabilityStartNewPlaces: " + (end - start) / 1e9);
+	//		return newPlaceIDs;
+	//	}
+	//
+	//	private void ShutdownMallPlacesBlocking(List<Place> shutdownPlacesIDs) {
+	//		final boolean verbose = Configuration.APGAS_VERBOSE_LAUNCHER.get();
+	//		shutdownMallPlacesBlocking(shutdownPlacesIDs, verbose);
+	//		console.println("malleablityRemovePlaces");
+	//	}
 
 	private List<Integer> malleabilityStartNewPlaces(
 			List<Integer> newPlaceIDs, final int numPlacesToAdd) {

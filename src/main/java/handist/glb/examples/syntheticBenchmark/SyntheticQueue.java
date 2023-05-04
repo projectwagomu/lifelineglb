@@ -9,140 +9,143 @@ import handist.glb.multiworker.GLBMultiWorkerConfiguration;
 
 public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, LongSum> {
 
-  public SyntheticQueue(final long durationVariance, final long maxChildren, boolean isStatic) {
-    super(durationVariance, maxChildren, isStatic);
-  }
+	/** Serial Version UID */
+	private static final long serialVersionUID = -7797377631042311713L;
 
-  @Override
-  public boolean isEmpty() {
-    return tasks.isEmpty();
-  }
+	public SyntheticQueue(final long durationVariance, final long maxChildren, boolean isStatic) {
+		super(durationVariance, maxChildren, isStatic);
+	}
 
-  @Override
-  public boolean isSplittable() {
-    if (this.tasks.size() >= 2) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+	@Override
+	public boolean isEmpty() {
+		return tasks.isEmpty();
+	}
 
-  @Override
-  public void merge(SyntheticQueue syntheticQueue) {
-    this.tasks.pushArrayFirst(syntheticQueue.tasks.toArray());
-    this.diff += syntheticQueue.diff;
-    this.result += syntheticQueue.result;
-  }
+	@Override
+	public boolean isSplittable() {
+		if (this.tasks.size() >= 2) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
-  @Override
-  public int process(int workAmount, LongSum sharedObject) {
-    int i = 0;
-    for (; i < workAmount && this.tasks.size() > 0; ++i) {
-      calculate();
-    }
-    count += i;
-    result += i;
-    return i;
-  }
+	@Override
+	public void merge(SyntheticQueue syntheticQueue) {
+		this.tasks.pushArrayFirst(syntheticQueue.tasks.toArray());
+		this.diff += syntheticQueue.diff;
+		this.result += syntheticQueue.result;
+	}
 
-  @Override
-  public SyntheticQueue split(boolean takeAll) {
-    int nStolen = Math.max(tasks.size() / 2, 1);
-    if (tasks.size() < 2 && !takeAll) {
-      return new SyntheticQueue(this.durationVariance, this.maxChildren, this.isStatic);
-    }
+	@Override
+	public int process(int workAmount, LongSum sharedObject) {
+		int i = 0;
+		for (; i < workAmount && this.tasks.size() > 0; ++i) {
+			calculate();
+		}
+		count += i;
+		result += i;
+		return i;
+	}
 
-    // StaticSyn performs better if all tasks are taken out
-    // DynamicSyn performs better if it follows the steal half scheme from the original KobeGLB doku
-    if (this.isStatic) {
-      if (takeAll) {
-        nStolen = tasks.size();
-      }
-    }
+	@Override
+	public SyntheticQueue split(boolean takeAll) {
+		int nStolen = Math.max(tasks.size() / 2, 1);
+		if (tasks.size() < 2 && !takeAll) {
+			return new SyntheticQueue(this.durationVariance, this.maxChildren, this.isStatic);
+		}
 
-    SyntheticQueue syntheticQueue =
-        new SyntheticQueue(this.durationVariance, this.maxChildren, this.isStatic);
-    SyntheticTask[] fromFirst = tasks.getFromFirst(nStolen);
-    for (final SyntheticTask t : fromFirst) {
-      syntheticQueue.tasks.addFirst(t);
-    }
-    if (takeAll) {
-      syntheticQueue.diff = diff;
-      diff = 0;
-    }
+		// StaticSyn performs better if all tasks are taken out
+		// DynamicSyn performs better if it follows the steal half scheme from the original KobeGLB doku
+		if (this.isStatic) {
+			if (takeAll) {
+				nStolen = tasks.size();
+			}
+		}
 
-    return syntheticQueue;
-  }
+		SyntheticQueue syntheticQueue =
+				new SyntheticQueue(this.durationVariance, this.maxChildren, this.isStatic);
+		SyntheticTask[] fromFirst = tasks.getFromFirst(nStolen);
+		for (final SyntheticTask t : fromFirst) {
+			syntheticQueue.tasks.addFirst(t);
+		}
+		if (takeAll) {
+			syntheticQueue.diff = diff;
+			diff = 0;
+		}
 
-  @Override
-  public void submit(LongSum longSum) {
-    longSum.sum += this.result;
-  }
+		return syntheticQueue;
+	}
 
-  @Override
-  public LongSum getResult() {
-    return new LongSum(this.result);
-  }
+	@Override
+	public void submit(LongSum longSum) {
+		longSum.sum += this.result;
+	}
 
-  @Override
-  public long getCurrentTaskCount() {
-    return this.tasks.size();
-  }
+	@Override
+	public LongSum getResult() {
+		return new LongSum(this.result);
+	}
 
-  @Override
-  public void initStaticTasks(int workerId) {
-    //    final boolean addPlaces =
-    // GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
-    //    final int mallPlaces =
-    //        GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_MALLPLACES.get();
-    //    final boolean mallEnabled =
-    // GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY.get();
-    final int workerPerPlace = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
+	@Override
+	public long getCurrentTaskCount() {
+		return this.tasks.size();
+	}
 
-    final int totalWorkers;
-    //    if (addPlaces && mallEnabled && mallPlaces > 0) {
-    //      // We increase the amount of work to InitPlaces+MallPlaces
-    //      totalWorkers = workerPerPlace * (places().size() + mallPlaces);
-    //    } else {
-    totalWorkers = workerPerPlace * places().size();
-    //    }
+	@Override
+	public void initStaticTasks(int workerId) {
+		//    final boolean addPlaces =
+		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
+		//    final int mallPlaces =
+		//        GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_MALLPLACES.get();
+		//    final boolean mallEnabled =
+		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY.get();
+		final int workerPerPlace = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
 
-    final long taskCount = tasksPerWorker * totalWorkers;
-    long taskDuration = (1000L * 1000L * totalDuration * totalWorkers) / taskCount;
-    randGen.setSeed(42);
-    double w[] = new double[totalWorkers];
-    double s = 0.0;
-    variance = durationVariance / 100.0f;
-    for (int i = 0; i < w.length; ++i) {
-      w[i] = (1 - variance) + randGen.nextFloat() * 2 * variance;
-      s += w[i];
-    }
+		final int totalWorkers;
+		//    if (addPlaces && mallEnabled && mallPlaces > 0) {
+		//      // We increase the amount of work to InitPlaces+MallPlaces
+		//      totalWorkers = workerPerPlace * (places().size() + mallPlaces);
+		//    } else {
+		totalWorkers = workerPerPlace * places().size();
+		//    }
 
-    final int myWorkerID = (here().id * workerPerPlace) + workerId;
-    taskDuration = (long) (totalWorkers * taskDuration * w[myWorkerID] / s);
+		final long taskCount = tasksPerWorker * totalWorkers;
+		long taskDuration = (1000L * 1000L * totalDuration * totalWorkers) / taskCount;
+		randGen.setSeed(42);
+		double w[] = new double[totalWorkers];
+		double s = 0.0;
+		variance = durationVariance / 100.0f;
+		for (int i = 0; i < w.length; ++i) {
+			w[i] = (1 - variance) + randGen.nextFloat() * 2 * variance;
+			s += w[i];
+		}
 
-    final long localTasksPerWorker;
-    //    if (addPlaces && mallEnabled && mallPlaces > 0) {
-    //      // We increase the count of localTasksPerWorker
-    //      localTasksPerWorker = taskCount / (workerPerPlace * places().size());
-    //    } else {
-    localTasksPerWorker = tasksPerWorker;
-    //    }
+		final int myWorkerID = (here().id * workerPerPlace) + workerId;
+		taskDuration = (long) (totalWorkers * taskDuration * w[myWorkerID] / s);
 
-    for (long i = 0; i < localTasksPerWorker; ++i) {
-      tasks.addLast(new SyntheticTask(taskBallast, taskDuration));
-    }
-    System.out.println(
-        here()
-            + " worker="
-            + workerId
-            + " created static tasks: taskDuration="
-            + taskDuration
-            + ", taskCount="
-            + taskCount
-            + ", tasksPerWorker="
-            + tasksPerWorker
-            + ", localTasksPerWorker="
-            + localTasksPerWorker);
-  }
+		final long localTasksPerWorker;
+		//    if (addPlaces && mallEnabled && mallPlaces > 0) {
+		//      // We increase the count of localTasksPerWorker
+		//      localTasksPerWorker = taskCount / (workerPerPlace * places().size());
+		//    } else {
+		localTasksPerWorker = tasksPerWorker;
+		//    }
+
+		for (long i = 0; i < localTasksPerWorker; ++i) {
+			tasks.addLast(new SyntheticTask(taskBallast, taskDuration));
+		}
+		System.out.println(
+				here()
+				+ " worker="
+				+ workerId
+				+ " created static tasks: taskDuration="
+				+ taskDuration
+				+ ", taskCount="
+				+ taskCount
+				+ ", tasksPerWorker="
+				+ tasksPerWorker
+				+ ", localTasksPerWorker="
+				+ localTasksPerWorker);
+	}
 }
