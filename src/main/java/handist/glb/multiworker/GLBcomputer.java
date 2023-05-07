@@ -22,6 +22,7 @@ import static apgas.Constructs.places;
 import static apgas.Constructs.uncountedAsyncAt;
 
 import apgas.Configuration;
+import apgas.ExtendedConstructs;
 import apgas.GlobalRuntime;
 import apgas.Place;
 import apgas.impl.elastic.MalleableHandler;
@@ -84,19 +85,23 @@ extends PlaceLocalObject implements MalleableHandler {
 
 	/**
 	 * When a shrink order is received, the places chosen to be removed are cut off from the
-	 * lifeline network and their work is sent back to remaining places. 
+	 * lifeline network and their work is sent back to remaining places. Their intermediary
+	 * result also needs to be transferred back to remaining places to be merged.
+	 * <p>In this implementation, we always choose the places with the largest IDs to be released.
 	 */
 	@Override
 	public List<Place> preShrink(int nbPlaces) {
+		mallActive.set(true);
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	/**
-	 * Nothing in particular needs to be performed before a grow order is put into place
+	 * Nothing in particular needs to be performed before a grow order is put into place.
 	 */
 	@Override
 	public void preGrow(int nbPlaces) {
+		mallActive.set(true);
 	}
 
 	/**
@@ -104,6 +109,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
+		mallActive.set(false);
 	}
 
 	/**
@@ -112,9 +118,67 @@ extends PlaceLocalObject implements MalleableHandler {
 	 * work from the currently running places.
 	 */
 	@Override
-	public void postGrow(int nbPlaces, List<? extends Place> currentPlaces, List<? extends Place> newPlaces) {
-		// TODO Auto-generated method stub
+	public void postGrow(int nbPlaces, List<? extends Place> continuedPlaces, List<? extends Place> newPlaces) {
+		final GlobalID globalID = getId(this);
+		SerializableSupplier<R> _resultInitializer = this.resultInitializer;
+		SerializableSupplier<B> _queueInitializer = this.queueInitializer;
+		SerializableSupplier<B> _workerInitializer = this.workerInitializer;
 
+		final ArrayList<Integer> newPlaceIds = new ArrayList<>();
+		for (Place p : newPlaces) {
+			newPlaceIds.add(p.id);
+		}
+
+		// Prepare new GlbComputer objects on the new places
+		finish(()->{
+			for (Place newPlace : newPlaces) {
+				try {
+					asyncAt(newPlace, () -> {
+						try {
+							System.err.println("Initializing GlbComputer on " + here());
+							// Create a GlbComputer instance and bind it to the existing GlobalId
+							final GLBcomputer<R, B> newComputer = new GLBcomputer<R, B>();
+							newComputer.id = globalID;
+							globalID.putHere(newComputer);
+
+							// Reset it so that it prepares the necessary data structures and starts stealing
+							newComputer.reset(_resultInitializer, _queueInitializer, _workerInitializer, true, newPlaceIds, false);
+						} catch (Exception e) {
+							System.err.println("Exception when initializing new GlbComputer on " + here());
+							e.printStackTrace();
+							throw e;
+						}
+					});
+				} catch (Exception e) {
+					System.err.println("Exception submitting the tasks to setup new places");
+					e.printStackTrace();
+					throw e;
+				}
+			}
+		});
+		finish(()->{
+			for (Place continuedPlace : continuedPlaces) {
+				// Recalculate the lifeline for the continued places
+				try {
+					immediateAsyncAt(continuedPlace, ()->{
+						try {
+							System.err.println("Re-calculating lifelines on " + here());
+							recalculateLifelinesAfterGrow(newPlaces);
+						} catch (Exception e) {
+							System.err.println("Exception when refreshing lifelines on " + here());
+							e.printStackTrace();
+							throw e;
+						}
+					});
+				} catch (Exception e) {
+					System.err.println("Exception submitting the tasks to refresh lifelines on continued places");
+					e.printStackTrace();
+					throw e;
+				}
+			}
+		});
+
+		mallActive.set(false);
 	}
 
 
@@ -510,6 +574,12 @@ extends PlaceLocalObject implements MalleableHandler {
 		this.queueInitializer = queueInitializer;
 		this.workerInitializer = workerInitializer;
 		resetAll(false);
+
+		// We set the malleable handler to `this` if in malleable mode
+		//		if (Configuration.APGAS_ELASTIC.equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+		mallActive = new AtomicBoolean(false);
+		ExtendedConstructs.defineMalleableHandle(this);
+		//		}
 
 		// We launch the computation
 		final long start = System.nanoTime();
@@ -1075,7 +1145,7 @@ extends PlaceLocalObject implements MalleableHandler {
 			// called by computeDynamic: bags are empty
 			// called by computeStatic: bags contain already tasks
 			WorkerBag workerBag = new WorkerBag(i, workerInitializer);
-			if (staticTasks == true) {
+			if (staticTasks) {
 				workerBag.initStaticTasks();
 			}
 			workerBags.add(workerBag);
@@ -1733,6 +1803,50 @@ extends PlaceLocalObject implements MalleableHandler {
 
 		end = System.nanoTime();
 		return newPlaceIDs;
+	}
+
+	/**
+	 * Procedure used to recalculate the lifeline network when places are added and/or removed from the runtime.
+	 * This method is called by {@link #postGrow(int, List, List)} and {@link #preShrink(int, List)} on each place
+	 * that is continuing execution.
+	 * @param addedPlaces places that were added as a result of the previous malleable operation (may be empty)
+	 * @param removedPlaces places that were removed as aresult of the previous malleable operation (may be empty)
+	 */
+	private void recalculateLifelinesAfterGrow(List<? extends Place> addedPlaces) {
+		List<? extends Place> allPlaces = places();
+		final int nbPlaces = allPlaces.size();
+		boolean startLifelineThread = false;
+
+		synchronized (lifelineLock) {
+			mallHighestPlaceID.set(allPlaces.get(nbPlaces-1).id);
+			LIFELINE = lifelineStrategy.lifeline(HOME.id, allPlaces);
+			REVERSE_LIFELINE = lifelineStrategy.reverseLifeline(HOME.id, allPlaces);
+
+			console.println("New LIFELINE=" + Arrays.toString(LIFELINE));
+			console.println("New REVERSE_LIFELINE=" + Arrays.toString(REVERSE_LIFELINE));
+
+			for (final int i : LIFELINE) {
+				if (!lifelineEstablished.contains(i)) {
+					lifelineEstablished.put(i, false);
+				}
+			}
+			console.println("lifelineEstablished=" + lifelineEstablished);
+
+			// Establish lifeline on current place in stead of newly added places
+			for (final int i : REVERSE_LIFELINE) {
+				if (addedPlaces.contains(place(i))) {
+					lifelineThieves.add(i);
+					startLifelineThread = true;
+				}
+			}
+
+			console.println("lifelineThieves=" + lifelineThieves);
+
+			if (startLifelineThread) {
+				lifelineAnswerLock.unblock(); // unblocking lifeline answer thread
+				lifelineToAnswer = true;
+			}
+		}
 	}
 
 	private void malleabilityRecalculateLifelines(

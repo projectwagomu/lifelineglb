@@ -27,10 +27,11 @@ MAINPRGM= java -cp "../target/*" \
         -Dapgas.hostfile=$HOSTFILE \
         -Dmalleable_scheduler_ip=127.0.0.1 \
         -Dmalleable_scheduler_port=8081 \
-        handist.glb.examples.syntheticBenchmark.StartSynthetic -b 0 -dynamic -g 45000 -t 6000 -u 20 &
+        handist.glb.examples.syntheticBenchmark.StartSynthetic -b 0 -dynamic -g 30000 -t 6000 -u 20 &
 
-#sleep 10
-#java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
+sleep 15
+echo "##### INITATIATING MALLEABLE GROWTH #####"
+java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
 #sleep 10
 #java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
 
