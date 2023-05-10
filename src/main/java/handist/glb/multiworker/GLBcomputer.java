@@ -92,8 +92,138 @@ extends PlaceLocalObject implements MalleableHandler {
 	@Override
 	public List<Place> preShrink(int nbPlaces) {
 		mallActive.set(true);
-		// TODO Auto-generated method stub
-		return null;
+		// Choose the places that are going to be shut down
+		final int currentNumberPlaces = places().size();
+		final int numberPlacesAfterShutdown = currentNumberPlaces - nbPlaces;
+		ArrayList<Place> toStop = new ArrayList<>(nbPlaces);
+		ArrayList<Place> toContinue = new ArrayList<>(numberPlacesAfterShutdown);
+		int largestIDRemaining = -1;
+		
+		int k=0;
+		for (Place p : places()) {
+			k++;
+			if (k <= numberPlacesAfterShutdown) {
+				// This place is kept
+				toContinue.add(p);
+				if (p.id > largestIDRemaining) {
+					largestIDRemaining = p.id;
+				}
+			} else {
+				// This place is removed
+				toStop.add(p);
+			}
+		}
+		final int largestId = largestIDRemaining;
+		
+		finish (()->{
+			for (Place p: places()) {
+				if (toStop.contains(p)) {
+					// For the places that remain, remove the lifelines to places to remove
+					mallShutdown.set(true);
+					shutdown = true;
+					lifelineAnswerLock.unblock();
+					workerLock.unblock();
+					final B dealBag = queueInitializer.get();
+
+					synchronized (workerBags) {
+						state = -3;
+					}
+
+					int myWorkerCount = workerCount;
+					while (myWorkerCount > 0) {
+						synchronized (workerBags) {
+							myWorkerCount = workerCount;
+						}
+						console.println(
+								"synchronized (workerBags): while (this.workerCount > 0): waiting, myWorkerCount="
+										+ myWorkerCount
+										+ ", workerAvailableLocks.size="
+										+ workerAvailableLocks.size()
+										+ ", lifelineAnswerThreadExited="
+										+ lifelineAnswerThreadExited);
+						console.println("" + this.POOL);
+						if (myWorkerCount > 0) {
+							TimeUnit.MILLISECONDS.sleep(100);
+						}
+					}
+
+					synchronized (workerBags) {
+						synchronized (intraPlaceQueue) {
+							console.println(
+									"intraPlaceQueue.result="
+											+ this.intraPlaceQueue.getResult()
+											+ ", taskCount="
+											+ this.intraPlaceQueue.getCurrentTaskCount());
+							console.println(
+									"interPlaceQueue.result="
+											+ this.interPlaceQueue.getResult()
+											+ ", taskCount="
+											+ this.interPlaceQueue.getCurrentTaskCount());
+
+							dealBag.merge(this.intraPlaceQueue);
+							dealBag.merge(this.interPlaceQueue);
+
+							final int worker = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
+							if (workerBags.size() != worker) {
+								console.println(
+										"Error: workerBags.size()="
+												+ workerBags.size()
+												+ ", but should be "
+												+ worker);
+							} else {
+								console.println("successful waited for stop all workers");
+							}
+
+							for (final WorkerBag wb : workerBags) {
+								dealBag.merge(wb.bag);
+								console.println(
+										"merged workbag.id="
+												+ wb.workerId
+												+ ", wb.bag.result="
+												+ wb.bag.getResult()
+												+ ", taskCount="
+												+ wb.bag.getCurrentTaskCount());
+							}
+						}
+					}
+					console.println(
+							"dealBag.result="
+									+ dealBag.getResult()
+									+ ", taskCount="
+									+ dealBag.getCurrentTaskCount());
+
+					final PlaceLogger l = logger;
+
+					int target = 0;
+					for (int i : REVERSE_LIFELINE) {
+						if (!toStop.contains(place(i))) {
+							target = i;
+							break;
+						}
+					}
+					console.println("found target for sending remaining tasks: " + target);
+					asyncAt(
+							place(target),
+							() -> {
+								console.println(
+										"(in asyncAt) (before deal), dealBag.result="
+												+ dealBag.getResult()
+												+ ", taskCount="
+												+ dealBag.getCurrentTaskCount());
+
+								console.println("(in asyncAt) (before deal), state=" + state);
+								deal(-42, dealBag, null);
+								console.println("(in asyncAt) (after deal), state=" + state);
+							});
+
+				} else {
+					// For the places to be removed: stop stealing, send work and intermediary results away to other places
+					recalculateLifelinesBeforeShrink(largestId, toContinue, toStop);
+				}
+			}
+		});
+
+		return toStop;
 	}
 
 	/**
@@ -109,6 +239,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
+		System.err.println("Malleable shrinkage completed");
 		mallActive.set(false);
 	}
 
@@ -178,6 +309,7 @@ extends PlaceLocalObject implements MalleableHandler {
 			}
 		});
 
+		System.err.println("Malleable growth completed");
 		mallActive.set(false);
 	}
 
@@ -1803,6 +1935,44 @@ extends PlaceLocalObject implements MalleableHandler {
 
 		end = System.nanoTime();
 		return newPlaceIDs;
+	}
+	
+	/**
+	 * Routine called on the places that will remain with the runtime just before the shrink is performed.
+	 * These places will re-compute their lifelines and discard any lifeline connecting to a place which is
+	 * about to be removed as part of the shrink operation
+	 * @param highestID the largest place ID for the places that remain in the runtime
+	 * @param allRemainingPlaces the places that will still be participating in the runtime after the shrink operation
+	 * @param removedPlaces the list of places to be removed from the runtime
+	 */
+	private void recalculateLifelinesBeforeShrink(int highestID, List<Place> allRemainingPlaces, List<Place> removedPlaces) {
+		synchronized (lifelineLock) {
+			this.mallHighestPlaceID.set(highestID);
+			this.LIFELINE = lifelineStrategy.lifeline(HOME.id, allRemainingPlaces);
+			this.REVERSE_LIFELINE =
+					this.lifelineStrategy.reverseLifeline(HOME.id, allRemainingPlaces);
+
+			console.println("New LIFELINE=" + Arrays.toString(LIFELINE));
+			console.println("New REVERSE_LIFELINE=" + Arrays.toString(REVERSE_LIFELINE));
+
+			console.println("before lifelineThieves=" + this.lifelineThieves);
+			for (Place p : removedPlaces) {
+				this.mallRemovedPlaces.add(p.id);
+				lifelineThieves.remove(p.id);
+				lifelineEstablished.put(p.id, true); // hack preventing the re-establishment of a lifeline on a place about to stop, the lifeline is actually not established
+			}
+			console.println("after lifelineThieves=" + this.lifelineThieves);
+			console.println("removedMallPlaces=" + this.mallRemovedPlaces);
+
+			for (final int i : LIFELINE) {
+				if (lifelineEstablished.contains(i) == false) {
+					lifelineEstablished.put(i, false);
+				}
+			}
+			console.println("lifelineEstablished=" + lifelineEstablished);
+
+			console.println("lifelineThieves=" + lifelineThieves);
+		}
 	}
 
 	/**
