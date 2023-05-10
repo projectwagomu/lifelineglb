@@ -98,7 +98,7 @@ extends PlaceLocalObject implements MalleableHandler {
 		ArrayList<Place> toStop = new ArrayList<>(nbPlaces);
 		ArrayList<Place> toContinue = new ArrayList<>(numberPlacesAfterShutdown);
 		int largestIDRemaining = -1;
-		
+
 		int k=0;
 		for (Place p : places()) {
 			k++;
@@ -114,116 +114,121 @@ extends PlaceLocalObject implements MalleableHandler {
 			}
 		}
 		final int largestId = largestIDRemaining;
-		
+
 		finish (()->{
-			for (Place p: places()) {
-				if (toStop.contains(p)) {
-					// For the places that remain, remove the lifelines to places to remove
-					mallShutdown.set(true);
-					shutdown = true;
-					lifelineAnswerLock.unblock();
-					workerLock.unblock();
-					final B dealBag = queueInitializer.get();
+			for (Place p: toContinue){
+				// For the places to be removed: stop stealing, send work and intermediary results away to other places
+				asyncAt(p, ()->recalculateLifelinesBeforeShrink(largestId, toContinue, toStop));
+			}
+		});
 
-					synchronized (workerBags) {
-						state = -3;
-					}
-
-					int myWorkerCount = workerCount;
-					while (myWorkerCount > 0) {
-						synchronized (workerBags) {
-							myWorkerCount = workerCount;
-						}
-						console.println(
-								"synchronized (workerBags): while (this.workerCount > 0): waiting, myWorkerCount="
-										+ myWorkerCount
-										+ ", workerAvailableLocks.size="
-										+ workerAvailableLocks.size()
-										+ ", lifelineAnswerThreadExited="
-										+ lifelineAnswerThreadExited);
-						console.println("" + this.POOL);
-						if (myWorkerCount > 0) {
-							TimeUnit.MILLISECONDS.sleep(100);
-						}
-					}
-
-					synchronized (workerBags) {
-						synchronized (intraPlaceQueue) {
-							console.println(
-									"intraPlaceQueue.result="
-											+ this.intraPlaceQueue.getResult()
-											+ ", taskCount="
-											+ this.intraPlaceQueue.getCurrentTaskCount());
-							console.println(
-									"interPlaceQueue.result="
-											+ this.interPlaceQueue.getResult()
-											+ ", taskCount="
-											+ this.interPlaceQueue.getCurrentTaskCount());
-
-							dealBag.merge(this.intraPlaceQueue);
-							dealBag.merge(this.interPlaceQueue);
-
-							final int worker = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
-							if (workerBags.size() != worker) {
-								console.println(
-										"Error: workerBags.size()="
-												+ workerBags.size()
-												+ ", but should be "
-												+ worker);
-							} else {
-								console.println("successful waited for stop all workers");
-							}
-
-							for (final WorkerBag wb : workerBags) {
-								dealBag.merge(wb.bag);
-								console.println(
-										"merged workbag.id="
-												+ wb.workerId
-												+ ", wb.bag.result="
-												+ wb.bag.getResult()
-												+ ", taskCount="
-												+ wb.bag.getCurrentTaskCount());
-							}
-						}
-					}
-					console.println(
-							"dealBag.result="
-									+ dealBag.getResult()
-									+ ", taskCount="
-									+ dealBag.getCurrentTaskCount());
-
-					final PlaceLogger l = logger;
-
-					int target = 0;
-					for (int i : REVERSE_LIFELINE) {
-						if (!toStop.contains(place(i))) {
-							target = i;
-							break;
-						}
-					}
-					console.println("found target for sending remaining tasks: " + target);
-					asyncAt(
-							place(target),
-							() -> {
-								console.println(
-										"(in asyncAt) (before deal), dealBag.result="
-												+ dealBag.getResult()
-												+ ", taskCount="
-												+ dealBag.getCurrentTaskCount());
-
-								console.println("(in asyncAt) (before deal), state=" + state);
-								deal(-42, dealBag, null);
-								console.println("(in asyncAt) (after deal), state=" + state);
-							});
-
-				} else {
-					// For the places to be removed: stop stealing, send work and intermediary results away to other places
-					recalculateLifelinesBeforeShrink(largestId, toContinue, toStop);
-				}
+		finish (()->{
+			for (Place p: toStop) {
+				// For the places that remain, remove the lifelines to places to remove
+				asyncAt(p, ()->transferWorkBeforeShutdown(toStop));
 			}
 		});
 
 		return toStop;
+	}
+
+	private void transferWorkBeforeShutdown(ArrayList<Place> toStop) throws InterruptedException {
+		mallShutdown.set(true);
+		shutdown = true;
+		lifelineAnswerLock.unblock();
+		workerLock.unblock();
+		final B dealBag = queueInitializer.get();
+
+		synchronized (workerBags) {
+			state = -3;
+		}
+
+		int myWorkerCount = workerCount;
+		while (myWorkerCount > 0) {
+			synchronized (workerBags) {
+				myWorkerCount = workerCount;
+			}
+			console.println(
+					"synchronized (workerBags): while (this.workerCount > 0): waiting, myWorkerCount="
+							+ myWorkerCount
+							+ ", workerAvailableLocks.size="
+							+ workerAvailableLocks.size()
+							+ ", lifelineAnswerThreadExited="
+							+ lifelineAnswerThreadExited);
+			console.println("" + this.POOL);
+			if (myWorkerCount > 0) {
+				TimeUnit.MILLISECONDS.sleep(100);
+			}
+		}
+
+		synchronized (workerBags) {
+			synchronized (intraPlaceQueue) {
+				console.println(
+						"intraPlaceQueue.result="
+								+ this.intraPlaceQueue.getResult()
+								+ ", taskCount="
+								+ this.intraPlaceQueue.getCurrentTaskCount());
+				console.println(
+						"interPlaceQueue.result="
+								+ this.interPlaceQueue.getResult()
+								+ ", taskCount="
+								+ this.interPlaceQueue.getCurrentTaskCount());
+
+				dealBag.merge(this.intraPlaceQueue);
+				dealBag.merge(this.interPlaceQueue);
+
+				final int worker = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
+				if (workerBags.size() != worker) {
+					console.println(
+							"Error: workerBags.size()="
+									+ workerBags.size()
+									+ ", but should be "
+									+ worker);
+				} else {
+					console.println("successful waited for stop all workers");
+				}
+
+				for (final WorkerBag wb : workerBags) {
+					dealBag.merge(wb.bag);
+					console.println(
+							"merged workbag.id="
+									+ wb.workerId
+									+ ", wb.bag.result="
+									+ wb.bag.getResult()
+									+ ", taskCount="
+									+ wb.bag.getCurrentTaskCount());
+				}
+			}
+		}
+		console.println(
+				"dealBag.result="
+						+ dealBag.getResult()
+						+ ", taskCount="
+						+ dealBag.getCurrentTaskCount());
+
+		final PlaceLogger l = logger;
+
+		int target = 0;
+		for (int i : REVERSE_LIFELINE) {
+			if (!toStop.contains(place(i))) {
+				target = i;
+				break;
+			}
+		}
+		console.println("found target for sending remaining tasks: " + target);
+		asyncAt(
+				place(target),
+				() -> {
+					console.println(
+							"(in asyncAt) (before deal), dealBag.result="
+									+ dealBag.getResult()
+									+ ", taskCount="
+									+ dealBag.getCurrentTaskCount());
+
+					console.println("(in asyncAt) (before deal), state=" + state);
+					deal(-42, dealBag, null);
+					console.println("(in asyncAt) (after deal), state=" + state);
+				});
 	}
 
 	/**
@@ -1936,7 +1941,7 @@ extends PlaceLocalObject implements MalleableHandler {
 		end = System.nanoTime();
 		return newPlaceIDs;
 	}
-	
+
 	/**
 	 * Routine called on the places that will remain with the runtime just before the shrink is performed.
 	 * These places will re-compute their lifelines and discard any lifeline connecting to a place which is
