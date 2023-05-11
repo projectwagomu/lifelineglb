@@ -1,10 +1,13 @@
 #!/bin/bash
 
+thisDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 # Compile project
+cd "${thisDir}/.."
 mvn package
 
 # Change to directory of this script
-cd "$(dirname "$0")"
+cd "${thisDir}"
 
 # Prepare hostfile
 HOSTNAME=`hostname`
@@ -23,11 +26,15 @@ echo ">>>>"
 MAINPRGM= java -cp "../target/*" \
         -Dapgas.verbose.launcher=true \
         -Dapgas.places=4 \
+        -Dapgas.threads=8 \
+        -Dapgas.immediate.threads=8 \
         -Dapgas.elastic=malleable \
         -Dapgas.hostfile=$HOSTFILE \
+        -Dapgas.consoleprinter=false \
+        -Dglb.multiworker.workerperplace=4 \
         -Dmalleable_scheduler_ip=127.0.0.1 \
         -Dmalleable_scheduler_port=8081 \
-        handist.glb.examples.syntheticBenchmark.StartSynthetic -b 0 -dynamic -g 30000 -t 6000 -u 20 &
+        handist.glb.examples.uts.StartMultiworkerUTS -d 16 &
 
 sleep 15
 echo "##### INITATIATING MALLEABLE GROWTH #####"
