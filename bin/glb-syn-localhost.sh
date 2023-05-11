@@ -37,10 +37,10 @@ MAINPRGM= java -cp "../target/*" \
         handist.glb.examples.syntheticBenchmark.StartSynthetic -b 0 -dynamic -g 30000 -t 6000 -u 20 &
 
 sleep 15
-echo "##### INITATIATING MALLEABLE GROWTH #####"
+echo "##### INITIATING MALLEABLE GROWTH #####"
 java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
 
-echo "##### INITATIATING MALLEABLE SHRINK #####"
+echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 10
 java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
 

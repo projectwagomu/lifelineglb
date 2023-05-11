@@ -41,10 +41,10 @@ MAINPRGM= java -cp "../target/*" \
 # on my laptop with above parameters about 10 GB!!!
 
 sleep 10
-echo "##### INITATIATING MALLEABLE GROWTH #####"
+echo "##### INITIATING MALLEABLE GROWTH #####"
 java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
 
-echo "##### INITATIATING MALLEABLE SHRINK #####"
+echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 10
 java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
 

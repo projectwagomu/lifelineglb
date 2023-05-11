@@ -38,10 +38,10 @@ MAINPRGM= java -cp "../target/*" \
         handist.glb.examples.bc.StartBC -n 15 &
 
 sleep 10
-echo "##### INITATIATING MALLEABLE GROWTH #####"
+echo "##### INITIATING MALLEABLE GROWTH #####"
 java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
 
-echo "##### INITATIATING MALLEABLE SHRINK #####"
+echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 10
 java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
 

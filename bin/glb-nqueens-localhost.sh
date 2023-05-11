@@ -37,10 +37,10 @@ MAINPRGM= java -cp "../target/*" \
         handist.glb.examples.nqueens.StartNQueens -n 15 -t 11 &
 
 sleep 5
-echo "##### INITATIATING MALLEABLE GROWTH #####"
+echo "##### INITIATING MALLEABLE GROWTH #####"
 java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
 
-echo "##### INITATIATING MALLEABLE SHRINK #####"
+echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 5
 java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
 
