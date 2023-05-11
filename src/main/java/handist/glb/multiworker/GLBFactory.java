@@ -28,7 +28,7 @@ import java.util.List;
 public final class GLBFactory<
     R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> {
 
-  public GLBcomputer setupGLB(List<? extends Place> listPlaces) {
+  public GLBcomputer<R,B> setupGLB(List<? extends Place> listPlaces) {
 
     return PlaceLocalObject.make(
         listPlaces,

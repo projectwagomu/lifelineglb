@@ -41,8 +41,9 @@ public final class GLBMultiWorkerConfiguration<T> {
         });
   }
 
-  public static void printConfigs() {
-    List<GLBMultiWorkerConfiguration> allConfigs = new ArrayList<>();
+  @SuppressWarnings("rawtypes")
+  public static <T> void printConfigs() {
+	List<GLBMultiWorkerConfiguration> allConfigs = new ArrayList<>();
     allConfigs.add(GLB_MULTIWORKER_N);
     allConfigs.add(GLB_MULTIWORKER_W);
     allConfigs.add(GLB_MULTIWORKER_LIFELINESTRATEGY);
@@ -157,6 +158,7 @@ public final class GLBMultiWorkerConfiguration<T> {
    *
    * @return The Value of this Configuration
    */
+  @SuppressWarnings("unchecked")
   public synchronized T get() {
 
     if (this.cachedValue != null) {
