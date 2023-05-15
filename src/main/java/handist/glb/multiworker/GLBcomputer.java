@@ -645,6 +645,10 @@ extends PlaceLocalObject implements MalleableHandler {
 		this.workerInitializer = workerInitializer;
 		resetAll(true);
 
+//		TODO jonas: just copied below 2 lines from computeDynamic, however mallActive seems to be not needed
+		mallActive = new AtomicBoolean(false);
+		ExtendedConstructs.defineMalleableHandle(this);
+
 		// We launch the computation
 		final long start = System.nanoTime();
 
