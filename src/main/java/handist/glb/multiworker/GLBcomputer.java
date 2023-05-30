@@ -114,24 +114,47 @@ extends PlaceLocalObject implements MalleableHandler {
 		}
 		final int largestId = largestIDRemaining;
 
-		finish (()->{
-			for (Place p: toContinue){
-				// For the places to be removed: stop stealing, send work and intermediary results away to other places
-				asyncAt(p, ()->recalculateLifelinesBeforeShrink(largestId, toContinue, toStop));
-			}
-		});
+		final GlobalRef<CountDownLatch> lifelineCount =
+				new GlobalRef<>(new CountDownLatch(toContinue.size()));
 
-		finish (()->{
-			for (Place p: toStop) {
-				// For the places that remain, remove the lifelines to places to remove
-				asyncAt(p, ()->transferWorkBeforeShutdown(toStop));
-			}
-		});
+		for (Place p: toContinue){
+			// For the places to be removed: stop stealing, send work and intermediary results away to other places
+			immediateAsyncAt(p, () -> {
+				recalculateLifelinesBeforeShrink(largestId, toContinue, toStop);
+				immediateAsyncAt(
+						lifelineCount.home(),
+						() -> {
+							lifelineCount.get().countDown();
+						});
+			});
+		}
+		try {
+			lifelineCount.get().await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+
+		GlobalRef<CountDownLatch> toStopCount =
+				new GlobalRef<>(new CountDownLatch(toStop.size()));
+
+		for (Place p: toStop) {
+			// For the places that remain, remove the lifelines to places to remove
+			asyncAt(p, () -> {
+				transferWorkBeforeShutdown(toStop, toStopCount);
+			});
+		}
+
+		try {
+			toStopCount.get().await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		return toStop;
 	}
 
-	private void transferWorkBeforeShutdown(ArrayList<Place> toStop) throws InterruptedException {
+	private void transferWorkBeforeShutdown(ArrayList<Place> toStop, GlobalRef<CountDownLatch> toStopCount) throws InterruptedException {
 		mallShutdown.set(true);
 		shutdown = true;
 		lifelineAnswerLock.unblock();
@@ -227,6 +250,13 @@ extends PlaceLocalObject implements MalleableHandler {
 					console.println("(in asyncAt) (before deal), state=" + state);
 					deal(-42, dealBag, null);
 					console.println("(in asyncAt) (after deal), state=" + state);
+				});
+
+		immediateAsyncAt(
+				toStopCount.home(),
+				() -> {
+					computationLog.addPlaceLogger(l);
+					toStopCount.get().countDown();
 				});
 	}
 
