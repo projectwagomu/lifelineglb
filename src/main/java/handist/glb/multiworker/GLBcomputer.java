@@ -640,7 +640,10 @@ extends PlaceLocalObject implements MalleableHandler {
 		this.workerInitializer = workerInitializer;
 		resetAll(true);
 
-		ExtendedConstructs.defineMalleableHandle(this);
+		// We set the malleable handler to `this` if in malleable mode
+		if (Configuration.APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			ExtendedConstructs.defineMalleableHandle(this);
+		}
 
 		// We launch the computation
 		final long start = System.nanoTime();
@@ -710,7 +713,7 @@ extends PlaceLocalObject implements MalleableHandler {
 		resetAll(false);
 
 		// We set the malleable handler to `this` if in malleable mode
-		if (Configuration.APGAS_ELASTIC.equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+		if (Configuration.APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
 			ExtendedConstructs.defineMalleableHandle(this);
 		}
 
