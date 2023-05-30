@@ -444,7 +444,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	/**
 	 * Instance in which the result of the computation performed at this place is going to be stored.
 	 * It is initialized with the given neutral element before the computation starts in method {@link
-	 * #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier, boolean, boolean)}.
+	 * #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier, boolean, List, boolean)}.
 	 */
 	R result;
 	/**
@@ -484,7 +484,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 *
 	 * <p><em>Before the computation</em>, as many empty {@link WorkerBag}s as concurrent workers
 	 * ({@link GLBMultiWorkerConfiguration}) are placed in this collection as part of method {@link
-	 * #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier, boolean, boolean)}.
+	 * #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier, boolean, List, boolean)}.
 	 *
 	 * <p><em>During the computation</em>, this collection contains the {@link Bag}s of the workers
 	 * that are not active. Prior to launching a new asynchronous {@link #workerProcess(WorkerBag)}, a
@@ -1328,7 +1328,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 * Resets all instances of GLBcomputer in the system.
 	 *
 	 * <p>Calls method {@link #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier,
-	 * boolean, boolean)} on all places in the system. The tasks are performed asynchronously. The
+	 * boolean, List, boolean)} on all places in the system. The tasks are performed asynchronously. The
 	 * method returns when all the instances on each place have completed their reset.
 	 */
 	private void resetAll(final boolean staticTasks) {
@@ -1749,10 +1749,9 @@ extends PlaceLocalObject implements MalleableHandler {
 
 	/**
 	 * Procedure used to recalculate the lifeline network when places are added and/or removed from the runtime.
-	 * This method is called by {@link #postGrow(int, List, List)} and {@link #preShrink(int, List)} on each place
+	 * This method is called by {@link #postGrow(int, List, List)} and {@link #preShrink(int)} on each place
 	 * that is continuing execution.
 	 * @param addedPlaces places that were added as a result of the previous malleable operation (may be empty)
-	 * @param removedPlaces places that were removed as aresult of the previous malleable operation (may be empty)
 	 */
 	private void recalculateLifelinesAfterGrow(List<? extends Place> addedPlaces) {
 		List<? extends Place> allPlaces = places();
