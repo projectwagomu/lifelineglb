@@ -91,7 +91,6 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public List<Place> preShrink(int nbPlaces) {
-		mallActive.set(true);
 		// Choose the places that are going to be shut down
 		final int currentNumberPlaces = places().size();
 		final int numberPlacesAfterShutdown = currentNumberPlaces - nbPlaces;
@@ -236,7 +235,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public void preGrow(int nbPlaces) {
-		mallActive.set(true);
+		System.err.println("preGrow called");
 	}
 
 	/**
@@ -245,7 +244,6 @@ extends PlaceLocalObject implements MalleableHandler {
 	@Override
 	public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
 		System.err.println("Malleable shrinkage completed");
-		mallActive.set(false);
 	}
 
 	/**
@@ -315,7 +313,6 @@ extends PlaceLocalObject implements MalleableHandler {
 		});
 
 		System.err.println("Malleable growth completed");
-		mallActive.set(false);
 	}
 
 
@@ -461,8 +458,6 @@ extends PlaceLocalObject implements MalleableHandler {
 	AtomicBoolean mallShutdown;
 	/** Integer reflecting the current highest place ID. Needed for malleability */
 	AtomicInteger mallHighestPlaceID;
-	/** Flag used to signal that some malleability is currently going on. */
-	AtomicBoolean mallActive;
 	/**
 	 * State of this place.
 	 *
@@ -645,8 +640,6 @@ extends PlaceLocalObject implements MalleableHandler {
 		this.workerInitializer = workerInitializer;
 		resetAll(true);
 
-//		TODO jonas: just copied below 2 lines from computeDynamic, however mallActive seems to be not needed
-		mallActive = new AtomicBoolean(false);
 		ExtendedConstructs.defineMalleableHandle(this);
 
 		// We launch the computation
@@ -717,10 +710,9 @@ extends PlaceLocalObject implements MalleableHandler {
 		resetAll(false);
 
 		// We set the malleable handler to `this` if in malleable mode
-		//		if (Configuration.APGAS_ELASTIC.equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-		mallActive = new AtomicBoolean(false);
-		ExtendedConstructs.defineMalleableHandle(this);
-		//		}
+		if (Configuration.APGAS_ELASTIC.equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			ExtendedConstructs.defineMalleableHandle(this);
+		}
 
 		// We launch the computation
 		final long start = System.nanoTime();
