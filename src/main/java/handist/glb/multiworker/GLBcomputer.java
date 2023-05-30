@@ -1395,8 +1395,6 @@ extends PlaceLocalObject implements MalleableHandler {
 					lifelineAnswerThread();
 				});
 
-		// Testing new malleability, if enabled
-		malleabilityTestingWithScheduler();
 
 		// Prepare the first worker to process the work given as parameter
 		if (b != null) { // dynamic computation
@@ -1470,122 +1468,6 @@ extends PlaceLocalObject implements MalleableHandler {
 		// answer thread
 	}
 
-	private void malleabilityTestingWithScheduler() {
-		if (HOME.id != 0) {
-			return;
-		}
-		/*
-    if (mallCalledOnce) {
-      return;
-    } else {
-      mallCalledOnce = true;
-    }
-		 */
-
-		// final int delay = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_DELAY.get();
-		// final int delay = 0;
-		// final int numMallPlaces =
-		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_MALLPLACES.get();
-		// int numMallPlaces = 1;
-		final boolean mallEnabled = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY.get();
-
-		if (mallEnabled /*&& numMallPlaces > 0*/) {
-			mallActive = new AtomicBoolean(false);
-
-			//			async(
-			//					() -> {
-			//						// boolean addPlaces =
-			//						GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
-			//						if (isSocketClosed) return;
-			////						SchedulerMessages message = receiveSchedulerMessage();
-			//						String behavior = message.getBehavior();
-			//						int numMallPlaces = message.getNumMallPlaces();
-			//						List<String> hostnames = message.getHostNames();
-			//						console.println("behavior = " + behavior);
-			//
-			//						List<Integer> newPlaceIDs = null;
-			//						if (message.getBehaviorAsNum() == 0 /*expand*/) {
-			//							newPlaceIDs = malleabilityEarlyStartNewPlaces(numMallPlaces);
-			//						}
-			//
-			//						while (mallActive.get()) {
-			//							TimeUnit.MILLISECONDS.sleep(500);
-			//						}
-			//
-			//						if (shutdown) {
-			//							return;
-			//						}
-			//						console.println("malleability starts, addPlaces=" + behavior);
-			//
-			//						if (message.getBehaviorAsNum() == 0) {
-			//							/*add palces*/
-			//							malleabilityAdd(behavior, newPlaceIDs, numMallPlaces);
-			//						} else if (message.getBehaviorAsNum() == 1) { // kill places
-			//							malleabilityShrink(behavior, numMallPlaces);
-			//							sendRemovedHosts();
-			//						}
-			//						malleabilityTestingWithScheduler();
-			//					});
-		}
-	}
-
-	private void malleabilityAdd(String behavior, List<Integer> newPlaceIDs, int numMallPlaces) {
-		mallActive.set(true);
-		List<Integer> newStartedPlacesIDs = malleabilityStartNewPlaces(newPlaceIDs, numMallPlaces);
-		List<? extends Place> newPlacesList = places();
-		final int highestID = newPlacesList.get(newPlacesList.size() - 1).id;
-		malleabilityRecalculateLifelines(
-				newPlacesList, newStartedPlacesIDs, Collections.emptyList(), highestID);
-		console.println("malleabilityRecalculateLifelines finished");
-		if (newStartedPlacesIDs.isEmpty()) {
-			console.println(
-					"Error: Should start " + numMallPlaces + " new places, but zero could be started");
-		}
-		// addPlaces = false;
-		behavior = "keep";
-		mallActive.set(false);
-	}
-
-	private void malleabilityShrink(String behavior, Integer numMallPlaces) {
-		long before = System.nanoTime();
-
-		mallActive.set(true);
-		List<Integer> shutdownPlacesIDs = generateShutdownPlaceIDs(numMallPlaces);
-		List<? extends Place> remainingPlaces =
-				generateNewPlacesListWithoutShutdownPlaces(shutdownPlacesIDs);
-		final int highestID = remainingPlaces.get(remainingPlaces.size() - 1).id;
-		console.println(
-				"shutdown is going on! shutdownPlacesIDs="
-						+ shutdownPlacesIDs
-						+ ", remainingPlaces="
-						+ remainingPlaces);
-		// old places re-generate the lifeline graph
-		malleabilityRecalculateLifelines(
-				remainingPlaces, Collections.emptyList(), shutdownPlacesIDs, highestID);
-		console.println("malleabilityRecalculateLifelines finished");
-		long after = System.nanoTime();
-		console.printlnAlways("malleabilityRecalculateLifelines=" + (after - before) / 1e9 + " sec");
-
-		before = System.nanoTime();
-		malleabilityShutdownPlaces(remainingPlaces, shutdownPlacesIDs);
-		after = System.nanoTime();
-		console.printlnAlways("malleabilityShutdownPlaces=" + (after - before) / 1e9 + " sec");
-
-		before = System.nanoTime();
-		List<Place> placesToBeRemoved = new ArrayList<>();
-		for (int shutdownId : shutdownPlacesIDs) {
-			placesToBeRemoved.add(place(shutdownId));
-		}
-		//		ShutdownMallPlacesBlocking(placesToBeRemoved);
-		// TODO just for experiments no process killing, because hazelcast laggs
-		// Constructs.shutdownMallPlacesBlocking(placesToBeRemoved, true);
-		after = System.nanoTime();
-		console.printlnAlways(
-				"Constructs.shutdownMallPlacesBlocking=" + (after - before) / 1e9 + " sec");
-		// addPlaces = true;
-		behavior = "keep";
-		mallActive.set(false);
-	}
 
 	private List<Place> generateNewPlacesListWithoutShutdownPlaces(List<Integer> shutdownPlacesIDs) {
 		List<Place> result = new ArrayList<>();
