@@ -295,53 +295,82 @@ extends PlaceLocalObject implements MalleableHandler {
 		}
 
 		// Prepare new GlbComputer objects on the new places
-		finish(()->{
-			for (Place newPlace : newPlaces) {
-				try {
-					asyncAt(newPlace, () -> {
-						try {
-							System.err.println("Initializing GlbComputer on " + here());
-							// Create a GlbComputer instance and bind it to the existing GlobalId
-							final GLBcomputer<R, B> newComputer = new GLBcomputer<R, B>();
-							newComputer.id = globalID;
-							globalID.putHere(newComputer);
+		final GlobalRef<CountDownLatch> newPlacesCount =
+				new GlobalRef<>(new CountDownLatch(newPlaces.size()));
 
-							// Reset it so that it prepares the necessary data structures and starts stealing
-							newComputer.reset(_resultInitializer, _queueInitializer, _workerInitializer, true, newPlaceIds, false);
-						} catch (Exception e) {
-							System.err.println("Exception when initializing new GlbComputer on " + here());
-							e.printStackTrace();
-							throw e;
-						}
-					});
-				} catch (Exception e) {
-					System.err.println("Exception submitting the tasks to setup new places");
-					e.printStackTrace();
-					throw e;
-				}
+		for (Place newPlace : newPlaces) {
+			try {
+				immediateAsyncAt(newPlace, () -> {
+					try {
+						System.err.println("Initializing GlbComputer on " + here());
+						// Create a GlbComputer instance and bind it to the existing GlobalId
+						final GLBcomputer<R, B> newComputer = new GLBcomputer<R, B>();
+						newComputer.id = globalID;
+						globalID.putHere(newComputer);
+
+						// Reset it so that it prepares the necessary data structures to start stealing
+						newComputer.reset(_resultInitializer, _queueInitializer, _workerInitializer, true, newPlaceIds, false);
+
+						immediateAsyncAt(
+								newPlacesCount.home(),
+							() -> {
+								newPlacesCount.get().countDown();
+							});
+
+					} catch (Exception e) {
+						System.err.println("Exception when initializing new GlbComputer on " + here());
+						e.printStackTrace();
+						throw e;
+					}
+				});
+			} catch (Exception e) {
+				System.err.println("Exception submitting the tasks to setup new places");
+				e.printStackTrace();
+				throw e;
 			}
-		});
-		finish(()->{
-			for (Place continuedPlace : continuedPlaces) {
-				// Recalculate the lifeline for the continued places
-				try {
-					immediateAsyncAt(continuedPlace, ()->{
-						try {
-							System.err.println("Re-calculating lifelines on " + here());
-							recalculateLifelinesAfterGrow(newPlaces);
-						} catch (Exception e) {
-							System.err.println("Exception when refreshing lifelines on " + here());
-							e.printStackTrace();
-							throw e;
-						}
-					});
-				} catch (Exception e) {
-					System.err.println("Exception submitting the tasks to refresh lifelines on continued places");
-					e.printStackTrace();
-					throw e;
-				}
+		}
+
+		try {
+			newPlacesCount.get().await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+
+		final GlobalRef<CountDownLatch> continuedPlacesCoúnt =
+				new GlobalRef<>(new CountDownLatch(continuedPlaces.size()));
+
+		for (Place continuedPlace : continuedPlaces) {
+			// Recalculate the lifeline for the continued places
+			try {
+				immediateAsyncAt(continuedPlace, ()->{
+					try {
+						System.err.println("Re-calculating lifelines on " + here());
+						recalculateLifelinesAfterGrow(newPlaces);
+					} catch (Exception e) {
+						System.err.println("Exception when refreshing lifelines on " + here());
+						e.printStackTrace();
+						throw e;
+					}
+
+					immediateAsyncAt(
+						continuedPlacesCoúnt.home(),
+						() -> {
+							continuedPlacesCoúnt.get().countDown();
+						});
+				});
+			} catch (Exception e) {
+				System.err.println("Exception submitting the tasks to refresh lifelines on continued places");
+				e.printStackTrace();
+				throw e;
 			}
-		});
+		}
+
+		try {
+			continuedPlacesCoúnt.get().await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		System.err.println("Malleable growth completed");
 	}
