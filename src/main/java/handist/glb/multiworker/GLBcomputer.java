@@ -90,6 +90,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public List<Place> preShrink(int nbPlaces) {
+		System.err.println("preShrink called");
 		// Choose the places that are going to be shut down
 		final int currentNumberPlaces = places().size();
 		final int numberPlacesAfterShutdown = currentNumberPlaces - nbPlaces;
@@ -242,7 +243,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public void postShrink(int nbPlaces, List<? extends Place> currentPlaces) {
-		System.err.println("Malleable shrinkage completed");
+		System.err.println("postShrink called");
 	}
 
 	/**
@@ -252,6 +253,7 @@ extends PlaceLocalObject implements MalleableHandler {
 	 */
 	@Override
 	public void postGrow(int nbPlaces, List<? extends Place> continuedPlaces, List<? extends Place> newPlaces) {
+		System.err.println("postGrow called");
 		final GlobalID globalID = getId(this);
 		SerializableSupplier<R> _resultInitializer = this.resultInitializer;
 		SerializableSupplier<B> _queueInitializer = this.queueInitializer;
