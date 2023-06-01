@@ -34,13 +34,8 @@ public final class GLBMultiWorkerConfiguration<T> {
 
 	public static final String GLB_MULTIWORKER_LIFELINESTRATEGY_PROPERTY = "glb.multiworker.lifelinestrategy";
 
-	public static final String GLB_MULTIWORKER_MALLEABILITY_ADD_PROPERTY = "glb.multiworker.malleability.add";
-	public static final String GLB_MULTIWORKER_MALLEABILITY_DELAY_PROPERTY = "glb.multiworker.malleability.delay";
-
-	public static final String GLB_MULTIWORKER_MALLEABILITY_MALLPLACES_PROPERTY = "glb.multiworker.malleability.mallplaces";
-	public static final String GLB_MULTIWORKER_MALLEABILITY_PROPERTY = "glb.multiworker.malleability";
-
 	public static final String GLB_MULTIWORKER_N_PROPERTY = "glb.multiworker.n";
+
 	public static final String GLB_MULTIWORKER_W_PROPERTY = "glb.multiworker.w";
 
 	public static final String GLB_MULTIWORKER_WORKERPERPLACE_PROPERTY = "glb.multiworker.workerperplace";
@@ -49,17 +44,7 @@ public final class GLBMultiWorkerConfiguration<T> {
 
 	public static final GLBMultiWorkerConfiguration<String> GLBOPTION_MULTIWORKER_LIFELINESTRATEGY = new GLBMultiWorkerConfiguration<>(
 			GLB_MULTIWORKER_LIFELINESTRATEGY_PROPERTY, MyHypercubeStrategy.class.getCanonicalName(), String.class);
-	public static final GLBMultiWorkerConfiguration<Boolean> GLBOPTION_MULTIWORKER_MALLEABILITY = new GLBMultiWorkerConfiguration<>(
-			GLB_MULTIWORKER_MALLEABILITY_PROPERTY, false, Boolean.class);
 
-	public static final GLBMultiWorkerConfiguration<Boolean> GLBOPTION_MULTIWORKER_MALLEABILITY_ADD = new GLBMultiWorkerConfiguration<>(
-			GLB_MULTIWORKER_MALLEABILITY_ADD_PROPERTY, true, Boolean.class);
-	public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_MULTIWORKER_MALLEABILITY_DELAY = new GLBMultiWorkerConfiguration<>(
-			// for testing right now, default should be 0
-			GLB_MULTIWORKER_MALLEABILITY_DELAY_PROPERTY, 10, Integer.class);
-
-	public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_MULTIWORKER_MALLEABILITY_MALLPLACES = new GLBMultiWorkerConfiguration<>(
-			GLB_MULTIWORKER_MALLEABILITY_MALLPLACES_PROPERTY, 0, Integer.class);
 	public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_MULTIWORKER_N = new GLBMultiWorkerConfiguration<>(
 			GLB_MULTIWORKER_N_PROPERTY, 511, Integer.class);
 
@@ -87,10 +72,6 @@ public final class GLBMultiWorkerConfiguration<T> {
 		allConfigs.add(GLBOPTION_MULTIWORKER_LIFELINESTRATEGY);
 		allConfigs.add(GLBOPTION_MULTIWORKER_WORKERPERPLACE);
 		allConfigs.add(GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS);
-		allConfigs.add(GLBOPTION_MULTIWORKER_MALLEABILITY);
-		allConfigs.add(GLBOPTION_MULTIWORKER_MALLEABILITY_DELAY);
-		allConfigs.add(GLBOPTION_MULTIWORKER_MALLEABILITY_MALLPLACES);
-		allConfigs.add(GLBOPTION_MULTIWORKER_MALLEABILITY_ADD);
 
 		final StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("GLB Multiworker config on ");
