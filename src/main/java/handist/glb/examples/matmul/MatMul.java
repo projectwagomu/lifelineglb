@@ -171,7 +171,7 @@ public class MatMul implements Bag<MatMul, LongSum>, Serializable {
         multiplyAccumulative(A[ii][k], B[k][jj], C[ii][jj]);
       }
 
-      if (Configuration.APGAS_CONSOLEPRINTER.get() == true) {
+      if (Configuration.CONFIG_APGAS_CONSOLEPRINTER.get() == true) {
         // print only every XX seconds
         final long now = System.nanoTime();
         if (((now - lastPrint) / 1e9) > 5) {

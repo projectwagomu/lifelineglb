@@ -4,12 +4,12 @@ import java.io.Serializable;
 
 public class FixedRailQueueInt implements Serializable {
 
-  private final int[] internalStorage;
+  private static final long serialVersionUID = -4091123581702286687L;
+private final int[] internalStorage;
   private int head;
   private int tail;
 
   /** Construct a fixed size queue */
-  @SuppressWarnings("unchecked")
   public FixedRailQueueInt(int n) {
     this.internalStorage = new int[n];
     this.head = 0;

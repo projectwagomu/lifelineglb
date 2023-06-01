@@ -19,10 +19,10 @@ public class ExampleHelper {
 
   public static void configureAPGAS(boolean verbose) {
     GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.setDefaultValue(2);
-    Configuration.APGAS_PLACES.setDefaultValue(2);
-    Configuration.APGAS_THREADS.setDefaultValue(6);
-    Configuration.APGAS_IMMEDIATE_THREADS.setDefaultValue(4);
-    Configuration.APGAS_BACKUPCOUNT.setDefaultValue(1);
+    Configuration.CONFIG_APGAS_PLACES.setDefaultValue(2);
+    Configuration.CONFIG_APGAS_THREADS.setDefaultValue(6);
+    Configuration.CONFIG_APGAS_IMMEDIATE_THREADS.setDefaultValue(4);
+    Configuration.CONFIG_APGAS_BACKUPCOUNT.setDefaultValue(1);
     //    Configuration.APGAS_RESILIENT.setDefaultValue(false);
     //    Configuration.APGAS_CONSOLEPRINTER.setDefaultValue(true);
     //    Configuration.APGAS_VERBOSE_LAUNCHER.setDefaultValue(true);
@@ -33,13 +33,13 @@ public class ExampleHelper {
           "APGAS config: places="
               + places().size()
               + ", threads="
-              + Configuration.APGAS_THREADS.get()
+              + Configuration.CONFIG_APGAS_THREADS.get()
               + ", immediate="
-              + Configuration.APGAS_IMMEDIATE_THREADS.get()
+              + Configuration.CONFIG_APGAS_IMMEDIATE_THREADS.get()
               + ", resilient="
-              + Configuration.APGAS_RESILIENT.get()
+              + Configuration.CONFIG_APGAS_RESILIENT.get()
               + ", backupcount="
-              + Configuration.APGAS_BACKUPCOUNT.get());
+              + Configuration.CONFIG_APGAS_BACKUPCOUNT.get());
     }
   }
 

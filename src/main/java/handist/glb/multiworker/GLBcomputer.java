@@ -20,9 +20,9 @@ import static apgas.Constructs.isDead;
 import static apgas.Constructs.place;
 import static apgas.Constructs.places;
 import static apgas.Constructs.uncountedAsyncAt;
+import static apgas.Constructs.defineMalleableHandle;
 
 import apgas.Configuration;
-import apgas.ExtendedConstructs;
 import apgas.GlobalRuntime;
 import apgas.Place;
 import apgas.impl.elastic.MalleableHandler;
@@ -698,8 +698,8 @@ extends PlaceLocalObject implements MalleableHandler {
 		resetAll(true);
 
 		// We set the malleable handler to `this` if in malleable mode
-		if (Configuration.APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-			ExtendedConstructs.defineMalleableHandle(this);
+		if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			defineMalleableHandle(this);
 		}
 
 		// We launch the computation
@@ -770,8 +770,8 @@ extends PlaceLocalObject implements MalleableHandler {
 		resetAll(false);
 
 		// We set the malleable handler to `this` if in malleable mode
-		if (Configuration.APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-			ExtendedConstructs.defineMalleableHandle(this);
+		if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			defineMalleableHandle(this);
 		}
 
 		// We launch the computation
@@ -1882,7 +1882,7 @@ extends PlaceLocalObject implements MalleableHandler {
 
 				long allProcessedTasks = logger.processedTasks.addAndGet(processedTasks);
 
-				if (Configuration.APGAS_CONSOLEPRINTER.get() == true) {
+				if (Configuration.CONFIG_APGAS_CONSOLEPRINTER.get() == true) {
 					// print only every XX seconds
 					final long now = System.nanoTime();
 					if (((now - lastPrint[myWorkerID]) / 1e9) > 4) {

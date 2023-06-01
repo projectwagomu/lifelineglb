@@ -90,7 +90,7 @@ public final class GLBMultiWorkerConfiguration<T> {
   public static final GLBMultiWorkerConfiguration<Integer> GLB_MULTIWORKER_WORKERPERPLACE =
       new GLBMultiWorkerConfiguration<>(
           GLB_MULTIWORKER_WORKERPERPLACE_PROPERTY,
-          Math.max(1, Configuration.APGAS_THREADS.get() / 3),
+          Math.max(1, Configuration.CONFIG_APGAS_THREADS.get() / 3),
           Integer.class);
 
   public static final String GLB_MULTIWORKER_MALLEABILITY_PROPERTY = "glb.multiworker.malleability";
