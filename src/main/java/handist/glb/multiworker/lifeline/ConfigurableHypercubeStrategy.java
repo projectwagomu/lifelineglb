@@ -11,16 +11,18 @@
  */
 package handist.glb.multiworker.lifeline;
 
-import apgas.Place;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import apgas.Place;
+
 /**
  * Lifeline strategy implementing an hypercube lifeline strategy among places.
  *
- * <p>A lifeline between two places exists if the edit distance between two place's id's written in
- * a certain base <em>z<em> is 1.
+ * <p>
+ * A lifeline between two places exists if the edit distance between two place's
+ * id's written in a certain base <em>z<em> is 1.
  *
  * @author Patrick Finnerty
  */
@@ -32,36 +34,28 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 	private int l = 2;
 	private int z = 2;
 
-	public int getL() {
-		return l;
+	public void decrementl() {
+		l--;
 	}
 
-	public void setL(int l) {
-		this.l = l;
+	public void decrementZ() {
+		z--;
+	}
+
+	public int getL() {
+		return l;
 	}
 
 	public int getZ() {
 		return z;
 	}
 
-	public void setZ(int z) {
-		this.z = z;
+	public void incrementL() {
+		l++;
 	}
 
 	public void incrementZ() {
-		this.z++;
-	}
-
-	public void decrementZ() {
-		this.z--;
-	}
-
-	public void incrementL() {
-		this.l++;
-	}
-
-	public void decrementl() {
-		this.l--;
+		z++;
 	}
 
 	/*
@@ -78,7 +72,7 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 		final int myId = findMyIdInList(home, placesList);
 		final int nbPlaces = placesList.size();
 
-		int[] result = new int[z];
+		final int[] result = new int[z];
 		int x = 1;
 		int t = 0;
 		for (int j = 0; j < z; j++) {
@@ -86,13 +80,29 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 			for (int k = 1; k < l; k++) {
 				v = v - v % (x * l) + (v + x * l - x) % (x * l);
 				if (v < nbPlaces) {
-					result[t++] = placesList.get(v).id;
+					result[t] = placesList.get(v).id;
+					t++;
 					break;
 				}
 			}
 			x *= l;
 		}
 		return removeMinusOnes(result);
+	}
+
+	private int[] removeMinusOnes(int[] input) {
+		final List<Integer> list = new ArrayList<>();
+		for (final int i : input) {
+			if (i < 0) {
+				continue;
+			}
+			list.add(i);
+		}
+		final int[] result = new int[list.size()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = list.get(i);
+		}
+		return result;
 	}
 
 	/*
@@ -109,12 +119,12 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 		final int myId = findMyIdInList(home, placesList);
 		final int nbPlaces = placesList.size();
 
-		int nodecountPerEdge = l;
+		final int nodecountPerEdge = l;
 
-		int[] predecessors = new int[z];
+		final int[] predecessors = new int[z];
 		int mathPower_nodecoutPerEdge_I = 1;
 		for (int i = 0; i < z; i++) {
-			int vectorLength = (myId / mathPower_nodecoutPerEdge_I) % nodecountPerEdge;
+			final int vectorLength = (myId / mathPower_nodecoutPerEdge_I) % nodecountPerEdge;
 
 			if (vectorLength + 1 == nodecountPerEdge
 					|| (predecessors[i] = myId + mathPower_nodecoutPerEdge_I) >= nbPlaces) {
@@ -128,7 +138,7 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 			mathPower_nodecoutPerEdge_I *= nodecountPerEdge;
 		}
 
-		int[] pre = new int[predecessors.length];
+		final int[] pre = new int[predecessors.length];
 		for (int i = 0; i < predecessors.length; i++) {
 			if (predecessors[i] < 0) {
 				pre[i] = predecessors[i];
@@ -140,18 +150,11 @@ public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializ
 		return removeMinusOnes(pre);
 	}
 
-	private int[] removeMinusOnes(int[] input) {
-		List<Integer> list = new ArrayList<>();
-		for (int i : input) {
-			if (i < 0) {
-				continue;
-			}
-			list.add(i);
-		}
-		int[] result = new int[list.size()];
-		for (int i = 0; i < result.length; i++) {
-			result[i] = list.get(i);
-		}
-		return result;
+	public void setL(int l) {
+		this.l = l;
+	}
+
+	public void setZ(int z) {
+		this.z = z;
 	}
 }

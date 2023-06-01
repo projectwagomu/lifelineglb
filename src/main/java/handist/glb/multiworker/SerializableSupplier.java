@@ -15,10 +15,11 @@ import java.io.Serializable;
 import java.util.function.Supplier;
 
 /**
- * Serializable {@link Supplier} interface. Used to lift some type inference issues that occur with
- * our library depending on the compiler used.
+ * Serializable {@link Supplier} interface. Used to lift some type inference
+ * issues that occur with our library depending on the compiler used.
  *
  * @author Patrick Finnerty
  * @param <T> Type parameter for the {@link Supplier}
  */
-public interface SerializableSupplier<T> extends Supplier<T>, Serializable {}
+public interface SerializableSupplier<T> extends Supplier<T>, Serializable {
+}

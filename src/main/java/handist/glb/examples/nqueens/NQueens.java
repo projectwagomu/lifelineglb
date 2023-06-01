@@ -1,247 +1,245 @@
 package handist.glb.examples.nqueens;
 
-import handist.glb.examples.util.LongSum;
-import handist.glb.multiworker.Bag;
+import static apgas.Constructs.here;
 
 import java.io.Serializable;
 
-import static apgas.Constructs.here;
+import handist.glb.examples.util.LongSum;
+import handist.glb.multiworker.Bag;
 
 public class NQueens implements Bag<NQueens, LongSum>, Serializable {
 
-  public final int QUEENS;
-  public final int THRESHOLD;
-  public final int INIT_SIZE;
-  public long count = 0;
-  public long result = 0;
-  public int[][] a;
-  public int[] depth;
-  public int size;
+	private static final long serialVersionUID = -6118047016331246031L;
 
-  public NQueens(final int queens, final int threshold, final int initSize) {
-    this.THRESHOLD = threshold;
-    this.QUEENS = queens;
-    this.INIT_SIZE = initSize;
-    this.a = new int[initSize][];
-    this.depth = new int[initSize];
-    this.size = 0;
-  }
+	public static int[] extendRight(final int[] src, final int newValue) {
+		final int[] res = new int[src.length + 1];
+		System.arraycopy(src, 0, res, 0, src.length);
+		res[src.length] = newValue;
+		return res;
+	}
 
-  public static int[] extendRight(final int[] src, final int newValue) {
-    final int[] res = new int[src.length + 1];
-    System.arraycopy(src, 0, res, 0, src.length);
-    res[src.length] = newValue;
-    return res;
-  }
+	/*
+	 * <a> contains array of <n> queen positions. Returns 1 if none of the queens
+	 * conflict, and returns 0 otherwise.
+	 */
+	public static boolean isBoardValid(final int n, final int[] a) {
+		int i, j;
+		int p, q;
+		for (i = 0; i < n; i++) {
+			p = a[i];
+			for (j = (i + 1); j < n; j++) {
+				q = a[j];
+				if (q == p || q == p - (j - i) || q == p + (j - i)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 
-  /*
-   * <a> contains array of <n> queen positions.  Returns 1
-   * if none of the queens conflict, and returns 0 otherwise.
-   */
-  public static boolean isBoardValid(final int n, final int[] a) {
-    int i, j;
-    int p, q;
-    for (i = 0; i < n; i++) {
-      p = a[i];
-      for (j = (i + 1); j < n; j++) {
-        q = a[j];
-        if (q == p || q == p - (j - i) || q == p + (j - i)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
+	public int[][] a;
+	public long count = 0;
+	public int[] depth;
+	public final int INIT_SIZE;
+	public final int QUEENS;
+	public long result = 0;
 
-  public void push(int[] b, int d) {
-    while (this.size >= this.depth.length) {
-      grow();
-    }
-    this.a[this.size] = new int[b.length];
-    System.arraycopy(b, 0, this.a[this.size], 0, b.length);
-    this.depth[this.size++] = d;
-  }
+	public int size;
 
-  public void grow() {
-    int capacity = this.depth.length * 2;
-    int[][] b = new int[capacity][];
+	public final int THRESHOLD;
 
-    for (int i = 0; i < this.size; i++) {
-      b[i] = new int[this.a[i].length];
-      System.arraycopy(this.a[i], 0, b[i], 0, this.a[i].length);
-    }
+	public NQueens(final int queens, final int threshold, final int initSize) {
+		THRESHOLD = threshold;
+		QUEENS = queens;
+		INIT_SIZE = initSize;
+		a = new int[initSize][];
+		depth = new int[initSize];
+		size = 0;
+	}
 
-    this.a = b;
-    int[] d = new int[capacity];
-    System.arraycopy(this.depth, 0, d, 0, this.size);
-    this.depth = d;
-  }
+	@Override
+	public long getCurrentTaskCount() {
+		return size;
+	}
 
-  public void nqueensKernelPar() {
-    int top = --this.size;
-    int currentA[] = a[top];
-    int currentD = depth[top];
+	@Override
+	public LongSum getResult() {
+		return new LongSum(result);
+	}
 
-    for (int i = 0; i < QUEENS; i++) {
-      final int ii = i;
-      final int[] b = extendRight(currentA, ii);
+	public void grow() {
+		final int capacity = depth.length * 2;
+		final int[][] b = new int[capacity][];
 
-      ++count;
-      if (isBoardValid((currentD + 1), b)) {
-        if (currentD < THRESHOLD) {
-          push(b, currentD + 1);
-        } else {
-          final int[] b2 = new int[QUEENS];
-          try {
-            System.arraycopy(b, 0, b2, 0, b.length);
+		for (int i = 0; i < size; i++) {
+			b[i] = new int[a[i].length];
+			System.arraycopy(a[i], 0, b[i], 0, a[i].length);
+		}
 
-          } catch (Throwable t) {
-            t.printStackTrace();
-          }
-          nqueensKernelSeq(b2, depth[top] + 1);
-        }
-      }
-    }
-  }
+		a = b;
+		final int[] d = new int[capacity];
+		System.arraycopy(depth, 0, d, 0, size);
+		depth = d;
+	}
 
-  public void nqueensKernelSeq(final int[] a, final int depth) {
-    if (QUEENS == depth) {
-      this.result++;
-      return;
-    }
+	public void init() {
+		push(new int[0], 0);
+	}
 
-    for (int i = 0; i < QUEENS; i++) {
-      a[depth] = i;
-      ++count;
-      if (isBoardValid((depth + 1), a)) {
-        nqueensKernelSeq(a, depth + 1);
-      }
-    }
-  }
+	@Override
+	public void initStaticTasks(int workerId) {
+		// Never called because computeDynamic is used
+	}
 
-  @Override
-  public boolean isEmpty() {
-    if (this.size == 0) {
-      return true;
-    } else {
-      return false;
-    }
-    //    return this.size == 0;
-  }
+	@Override
+	public boolean isEmpty() {
+		if (size == 0) {
+			return true;
+		}
+		return false;
+	}
 
-  @Override
-  public boolean isSplittable() {
-    if (this.size >= 2) {
-      return true;
-    } else {
-      return false;
-    }
-    //    return this.size > 2;
-  }
+	@Override
+	public boolean isSplittable() {
+		if (size >= 2) {
+			return true;
+		}
+		return false;
+	}
 
-  @Override
-  public void merge(NQueens other) {
-    if ((null == other) || other.isEmpty()) {
-      System.err.println(here() + " merge: bag was empty!!!");
-      return;
-    }
-    int otherSize = other.size;
-    int newSize = this.size + otherSize;
-    int thisSize = this.size;
-    while (newSize >= this.depth.length) {
-      this.grow();
-    }
+	@Override
+	public void merge(NQueens other) {
+		if ((null == other) || other.isEmpty()) {
+			System.err.println(here() + " merge: bag was empty!!!");
+			return;
+		}
+		final int otherSize = other.size;
+		final int newSize = size + otherSize;
+		final int thisSize = size;
+		while (newSize >= depth.length) {
+			grow();
+		}
 
-    System.arraycopy(other.depth, 0, this.depth, thisSize, otherSize);
+		System.arraycopy(other.depth, 0, depth, thisSize, otherSize);
 
-    //    for (int i = 0; i < other.depth.length; i++) {
-    for (int i = 0; i < otherSize; i++) {
-      a[i + thisSize] = new int[other.a[i].length];
-      System.arraycopy(other.a[i], 0, a[i + thisSize], 0, other.a[i].length);
-    }
+		// for (int i = 0; i < other.depth.length; i++) {
+		for (int i = 0; i < otherSize; i++) {
+			a[i + thisSize] = new int[other.a[i].length];
+			System.arraycopy(other.a[i], 0, a[i + thisSize], 0, other.a[i].length);
+		}
 
-    this.size = newSize;
+		size = newSize;
 
-    this.result += other.result;
-  }
+		result += other.result;
+	}
 
-  @Override
-  public int process(int workAmount, LongSum sharedObject) {
-    int i = 0;
-    for (; ((i < workAmount) && (this.size > 0)); ++i) {
-      this.nqueensKernelPar();
-    }
-    return i;
-  }
+	public void nqueensKernelPar() {
+		final int top = --size;
+		final int currentA[] = a[top];
+		final int currentD = depth[top];
 
-  @Override
-  public NQueens split(boolean takeAll) {
-    // TODO return leeres NQueens Object oder null?
-    if (this.size == 0) {
-      return new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
-    }
-    if (this.size == 1 && !takeAll) {
-      return new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
-    }
+		for (int i = 0; i < QUEENS; i++) {
+			final int ii = i;
+			final int[] b = extendRight(currentA, ii);
 
-    // TODO split half?
-    int otherHalf = this.size * (1 / 6);
-    if (otherHalf == 0) {
-      otherHalf = 1;
-    }
+			++count;
+			if (isBoardValid((currentD + 1), b)) {
+				if (currentD < THRESHOLD) {
+					push(b, currentD + 1);
+				} else {
+					final int[] b2 = new int[QUEENS];
+					try {
+						System.arraycopy(b, 0, b2, 0, b.length);
 
-    int myHalf = this.size - otherHalf;
+					} catch (final Throwable t) {
+						t.printStackTrace();
+					}
+					nqueensKernelSeq(b2, depth[top] + 1);
+				}
+			}
+		}
+	}
 
-    final NQueens loot = new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
+	public void nqueensKernelSeq(final int[] a, final int depth) {
+		if (QUEENS == depth) {
+			result++;
+			return;
+		}
 
-    int[] lootD = new int[otherHalf];
-    int[][] lootA = new int[otherHalf][];
+		for (int i = 0; i < QUEENS; i++) {
+			a[depth] = i;
+			++count;
+			if (isBoardValid((depth + 1), a)) {
+				nqueensKernelSeq(a, depth + 1);
+			}
+		}
+	}
 
-    // von unten
-    System.arraycopy(this.depth, 0, lootD, 0, otherHalf);
-    System.arraycopy(this.depth, otherHalf, this.depth, 0, myHalf);
+	@Override
+	public int process(int workAmount, LongSum sharedObject) {
+		int i = 0;
+		for (; ((i < workAmount) && (size > 0)); ++i) {
+			nqueensKernelPar();
+		}
+		return i;
+	}
 
-    for (int i = 0; i < otherHalf; i++) {
-      lootA[i] = new int[a[i].length];
-      System.arraycopy(this.a[i], 0, lootA[i], 0, a[i].length);
-    }
+	public void push(int[] b, int d) {
+		while (size >= depth.length) {
+			grow();
+		}
+		a[size] = new int[b.length];
+		System.arraycopy(b, 0, a[size], 0, b.length);
+		depth[size++] = d;
+	}
 
-    int j = 0;
-    for (int i = otherHalf; i < this.size; i++) {
-      this.a[j] = new int[a[i].length];
-      System.arraycopy(this.a[i], 0, this.a[j++], 0, a[i].length);
-    }
+	@Override
+	public NQueens split(boolean takeAll) {
+		// TODO return leeres NQueens Object oder null?
+		if ((size == 0) || (size == 1 && !takeAll)) {
+			return new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
+		}
 
-    this.size = myHalf;
+		// TODO split half?
+		int otherHalf = size * (1 / 6);
+		if (otherHalf == 0) {
+			otherHalf = 1;
+		}
 
-    loot.a = lootA;
-    loot.depth = lootD;
-    loot.size = otherHalf;
+		final int myHalf = size - otherHalf;
 
-    return loot;
-  }
+		final NQueens loot = new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
 
-  @Override
-  public void submit(LongSum sum) {
-    sum.sum += result;
-  }
+		final int[] lootD = new int[otherHalf];
+		final int[][] lootA = new int[otherHalf][];
 
-  @Override
-  public LongSum getResult() {
-    return new LongSum(result);
-  }
+		// von unten
+		System.arraycopy(depth, 0, lootD, 0, otherHalf);
+		System.arraycopy(depth, otherHalf, depth, 0, myHalf);
 
-  @Override
-  public long getCurrentTaskCount() {
-    return size;
-  }
+		for (int i = 0; i < otherHalf; i++) {
+			lootA[i] = new int[a[i].length];
+			System.arraycopy(a[i], 0, lootA[i], 0, a[i].length);
+		}
 
-  @Override
-  public void initStaticTasks(int workerId) {
-    // Never called because computeDynamic is used
-  }
+		int j = 0;
+		for (int i = otherHalf; i < size; i++) {
+			a[j] = new int[a[i].length];
+			System.arraycopy(a[i], 0, a[j], 0, a[i].length);
+			j++;
+		}
 
-  public void init() {
-    push(new int[0], 0);
-  }
+		size = myHalf;
+
+		loot.a = lootA;
+		loot.depth = lootD;
+		loot.size = otherHalf;
+
+		return loot;
+	}
+
+	@Override
+	public void submit(LongSum sum) {
+		sum.sum += result;
+	}
 }

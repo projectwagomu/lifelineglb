@@ -19,60 +19,62 @@ import java.util.concurrent.Semaphore;
 /**
  * {@link ManagedBlocker} implementation relying on a Semaphore.
  *
- * <p>This class is used to make threads of the {@link ForkJoinPool} used in the APGAS runtime for
- * Java yield to one another, thus guaranteeing the proper functioning of the {@link GLBcomputer}.
+ * <p>
+ * This class is used to make threads of the {@link ForkJoinPool} used in the
+ * APGAS runtime for Java yield to one another, thus guaranteeing the proper
+ * functioning of the {@link GLBcomputer}.
  *
  * @author Patrick Finnerty
  */
 public class Lock implements ForkJoinPool.ManagedBlocker, Serializable {
 
-  /** Serial Version UID */
-  private static final long serialVersionUID = -3222675796580210125L;
+	/** Serial Version UID */
+	private static final long serialVersionUID = -3222675796580210125L;
 
-  /** Semaphore used for this lock implementation */
-  final Semaphore lock;
+	/** Semaphore used for this lock implementation */
+	final Semaphore lock;
 
-  /** Constructor Initializes a lock with no permits. */
-  public Lock() {
-    lock = new Semaphore(0);
-  }
+	/** Constructor Initializes a lock with no permits. */
+	public Lock() {
+		lock = new Semaphore(0);
+	}
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see java.util.concurrent.ForkJoinPool.ManagedBlocker#block()
-   */
-  @Override
-  public boolean block() {
-    try {
-      lock.acquire();
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
-      block();
-    }
-    return true;
-  }
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see java.util.concurrent.ForkJoinPool.ManagedBlocker#block()
+	 */
+	@Override
+	public boolean block() {
+		try {
+			lock.acquire();
+		} catch (final InterruptedException e) {
+			e.printStackTrace();
+			block();
+		}
+		return true;
+	}
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see java.util.concurrent.ForkJoinPool.ManagedBlocker#isReleasable()
-   */
-  @Override
-  public boolean isReleasable() {
-    return lock.tryAcquire();
-  }
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see java.util.concurrent.ForkJoinPool.ManagedBlocker#isReleasable()
+	 */
+	@Override
+	public boolean isReleasable() {
+		return lock.tryAcquire();
+	}
 
-  /** Called to unblock the thread that is blocked using this {@link Lock}. */
-  public void unblock() {
-    lock.drainPermits(); // Avoids unnecessary accumulation of permits in the
-    // Lock. In our situation, a maximum of one permit is
-    // sufficient.
-    lock.release();
-  }
+	/** Drains all the permits in this lock. */
+	public void reset() {
+		lock.drainPermits();
+	}
 
-  /** Drains all the permits in this lock. */
-  public void reset() {
-    lock.drainPermits();
-  }
+	/** Called to unblock the thread that is blocked using this {@link Lock}. */
+	public void unblock() {
+		lock.drainPermits(); // Avoids unnecessary accumulation of permits in the
+		// Lock. In our situation, a maximum of one permit is
+		// sufficient.
+		lock.release();
+	}
 }

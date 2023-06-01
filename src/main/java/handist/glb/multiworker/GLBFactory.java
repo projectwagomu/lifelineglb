@@ -11,29 +11,27 @@
  */
 package handist.glb.multiworker;
 
-import apgas.Place;
-import apgas.util.PlaceLocalObject;
 import java.io.Serializable;
 import java.util.List;
 
+import apgas.Place;
+import apgas.util.PlaceLocalObject;
+
 /**
- * Factory class used to provide computation service instances to the programmer.
+ * Factory class used to provide computation service instances to the
+ * programmer.
  *
- * <p>Some specific preparations need to be made for the distributed computation. This class handles
- * this process, providing the factory method that will make these preparations and return a
- * computation service ready for use.
+ * <p>
+ * Some specific preparations need to be made for the distributed computation.
+ * This class handles this process, providing the factory method that will make
+ * these preparations and return a computation service ready for use.
  *
  * @author Patrick Finnerty
  */
-public final class GLBFactory<
-    R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> {
+public final class GLBFactory<R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> {
 
-  public GLBcomputer<R,B> setupGLB(List<? extends Place> listPlaces) {
+	public GLBcomputer<R, B> setupGLB(List<? extends Place> listPlaces) {
 
-    return PlaceLocalObject.make(
-        listPlaces,
-        () -> {
-          return new GLBcomputer<R, B>();
-        });
-  }
+		return PlaceLocalObject.make(listPlaces, GLBcomputer::new);
+	}
 }

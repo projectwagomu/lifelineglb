@@ -1,5 +1,13 @@
 package handist.glb.examples.bc;
 
+import static apgas.Constructs.places;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import apgas.Configuration;
 import handist.glb.examples.util.DoubleArraySum;
 import handist.glb.examples.util.ExampleHelper;
@@ -7,107 +15,92 @@ import handist.glb.multiworker.GLBFactory;
 import handist.glb.multiworker.GLBMultiWorkerConfiguration;
 import handist.glb.multiworker.GLBcomputer;
 import handist.glb.multiworker.SerializableSupplier;
-import org.apache.commons.cli.*;
-
-import static apgas.Constructs.places;
 
 public class StartBC {
 
-  static final int SEED_DEFAULT = 2;
-  static final int N_DEFAULT = 14;
-  static final int QSIZE_DEFAULT = 16;
-  static final double A_DEFAULT = 0.55d;
-  static final double B_DEFAULT = 0.1d;
-  static final double C_DEFAULT = 0.1d;
-  static final double D_DEFAULT = 0.25d;
-  static final int PERMUTE_DEFAULT = 1;
+	static final double A_DEFAULT = 0.55d;
+	static final double B_DEFAULT = 0.1d;
+	static final double C_DEFAULT = 0.1d;
+	static final double D_DEFAULT = 0.25d;
 
-  static int seed = SEED_DEFAULT;
-  static int n = N_DEFAULT;
-  static int qSize = QSIZE_DEFAULT;
+	static final int N_DEFAULT = 14;
+	static final int PERMUTE_DEFAULT = 1;
+	static final int QSIZE_DEFAULT = 16;
+	static final int SEED_DEFAULT = 2;
 
-  private static void parseArguments(String[] args, boolean verbose) {
-    Options options = new Options();
+	public static void main(String[] args) {
+		ExampleHelper.printStartMessage(StartBC.class.getName());
+		ExampleHelper.configureAPGAS(false);
+		Configuration.printAllConfigs();
+		GLBMultiWorkerConfiguration.printAllConfigs();
+		final CommandLine cmd = parseArguments(args);
+		// ExampleHelper.printAllFJsScheduled(5);
 
-    options.addOption("seed", true, "Seed for the random number");
-    options.addOption("n", true, "Number of vertices = 2^n");
-    options.addOption("q", true, "Queue Size");
+		final int seed = Integer.parseInt(cmd.getOptionValue("seed", String.valueOf(SEED_DEFAULT)));
+		final int n = Integer.parseInt(cmd.getOptionValue("n", String.valueOf(N_DEFAULT)));
+		final int qSize = Integer.parseInt(cmd.getOptionValue("q", String.valueOf(QSIZE_DEFAULT)));
+		final boolean verbose = Configuration.CONFIG_APGAS_VERBOSE_LAUNCHER.get();
 
-    CommandLineParser parser = new DefaultParser();
-    CommandLine cmd = null;
-    try {
-      cmd = parser.parse(options, args);
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
+		if (verbose) {
+			System.out
+					.println("BC config:\n" + "  n=" + n + "\n" + "  seed=" + seed + "\n" + "  qSize=" + qSize + "\n");
+		}
 
-    seed = Integer.parseInt(cmd.getOptionValue("seed", String.valueOf(SEED_DEFAULT)));
-    n = Integer.parseInt(cmd.getOptionValue("n", String.valueOf(N_DEFAULT)));
-    qSize = Integer.parseInt(cmd.getOptionValue("q", String.valueOf(QSIZE_DEFAULT)));
+		final int repetitions = GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS.get();
 
-    if (verbose) {
-      System.out.println(
-          "BC config:\n" + "  n=" + n + "\n" + "  seed=" + seed + "\n" + "  qSize=" + qSize + "\n");
-    }
-  }
+		for (int i = 0; i < repetitions; i++) {
 
-  public static void main(String[] args) {
-    ExampleHelper.printStartMessage(StartBC.class.getName());
-    ExampleHelper.configureAPGAS(false);
-    Configuration.printAllConfigs();
-    GLBMultiWorkerConfiguration.printAllConfigs();
-    parseArguments(args, true);
-    //    ExampleHelper.printAllFJsScheduled(5);
+			final int _resultSize = new BC(0).init(seed, n, A_DEFAULT, B_DEFAULT, C_DEFAULT, D_DEFAULT,
+					PERMUTE_DEFAULT);
 
-    final int repetitions = GLBMultiWorkerConfiguration.GLB_MULTIWORKER_BENCHMARKREPETITIONS.get();
+			final int _n = n;
+			final int _seed = seed;
+			final int _qSize = qSize;
+			final SerializableSupplier<BC> workerInitializer = () -> {
+				final BC b = new BC(_qSize);
+				b.init(_seed, _n, A_DEFAULT, B_DEFAULT, C_DEFAULT, D_DEFAULT, PERMUTE_DEFAULT);
+				return b;
+			};
 
-    for (int i = 0; i < repetitions; i++) {
+			final SerializableSupplier<BC> queueInitializer = () -> {
+				final BC b = new BC(_qSize);
+				return b;
+			};
 
-      final int _resultSize =
-          new BC(0).init(seed, n, A_DEFAULT, B_DEFAULT, C_DEFAULT, D_DEFAULT, PERMUTE_DEFAULT);
+			final GLBcomputer<DoubleArraySum, BC> glb = new GLBFactory<DoubleArraySum, BC>().setupGLB(places());
 
-      final int _n = n;
-      final int _seed = seed;
-      final int _qSize = qSize;
-      final SerializableSupplier<BC> workerInitializer =
-          () -> {
-            BC b = new BC(_qSize);
-            b.init(_seed, _n, A_DEFAULT, B_DEFAULT, C_DEFAULT, D_DEFAULT, PERMUTE_DEFAULT);
-            return b;
-          };
+			final DoubleArraySum sum = glb.computeStatic(() -> new DoubleArraySum(_resultSize), queueInitializer,
+					workerInitializer);
 
-      final SerializableSupplier<BC> queueInitializer =
-          () -> {
-            BC b = new BC(_qSize);
-            return b;
-          };
+			System.out.println("Run " + (i + 1) + "/" + repetitions + "; " + sum + "; "
+					+ glb.getLog().computationTime / 1e9 + "; ");
 
-      GLBcomputer<DoubleArraySum, BC> glb = new GLBFactory<DoubleArraySum, BC>().setupGLB(places());
+			System.out.println("Process time: " + glb.getLog().computationTime / 1e9 + " seconds");
 
-      final DoubleArraySum sum =
-          glb.computeStatic(
-              () -> new DoubleArraySum(_resultSize), queueInitializer, workerInitializer);
+			glb.getLog().printShort(System.out);
+			glb.getLog().printAll(System.out);
+			System.out.println();
+			System.out.println("#############################################################");
+			// sum.printSumArray();
+			System.out.println("#############################################################");
+			System.out.println();
+		}
+	}
 
-      System.out.println(
-          "Run "
-              + (i + 1)
-              + "/"
-              + repetitions
-              + "; "
-              + sum
-              + "; "
-              + glb.getLog().computationTime / 1e9
-              + "; ");
+	private static CommandLine parseArguments(String[] args) {
+		final Options options = new Options();
 
-      System.out.println("Process time: " + glb.getLog().computationTime / 1e9 + " seconds");
+		options.addOption("seed", true, "Seed for the random number");
+		options.addOption("n", true, "Number of vertices = 2^n");
+		options.addOption("q", true, "Queue Size");
 
-      glb.getLog().printShort(System.out);
-      glb.getLog().printAll(System.out);
-      System.out.println();
-      System.out.println("#############################################################");
-      //      sum.printSumArray();
-      System.out.println("#############################################################");
-      System.out.println();
-    }
-  }
+		final CommandLineParser parser = new DefaultParser();
+		CommandLine cmd = null;
+		try {
+			cmd = parser.parse(options, args);
+		} catch (final ParseException e) {
+			e.printStackTrace();
+		}
+		return cmd;
+	}
 }
