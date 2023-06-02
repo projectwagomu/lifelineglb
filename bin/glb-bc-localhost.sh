@@ -39,7 +39,7 @@ MAINPRGM= java -cp "../target/*" \
 
 sleep 10
 echo "##### INITIATING MALLEABLE GROWTH #####"
-java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOSTNAME $HOSTNAME
+java -cp "../target/*" apgas.testing.MalleableOrder grow 2 $HOSTNAME $HOSTNAME
 
 echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 10
