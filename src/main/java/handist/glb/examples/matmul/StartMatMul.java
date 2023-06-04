@@ -1,8 +1,12 @@
 /*
+ * Copyright (c) 2023 Wagomu project.
  *
- * Initiale Version von COMPSs, Barcelona Supercomputing Center (www.bsc.es)
- * https://github.com/bsc-wdc/tutorial_apps/tree/stable/java/matmul
+ * This program and the accompanying materials are made available to you under
+ * the terms of the Eclipse Public License 1.0 which accompanies this
+ * distribution,
+ * and is available at https://www.eclipse.org/legal/epl-v10.html
  *
+ * SPDX-License-Identifier: EPL-1.0
  */
 package handist.glb.examples.matmul;
 

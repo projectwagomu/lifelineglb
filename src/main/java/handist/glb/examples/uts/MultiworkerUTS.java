@@ -1,13 +1,12 @@
 /*
- *  This file is part of the Handy Tools for Distributed Computing project
- *  HanDist (https://github.com/handist)
+ * Copyright (c) 2023 Wagomu project.
  *
- *  This file is licensed to You under the Eclipse Public License (EPL);
- *  You may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *      http://www.opensource.org/licenses/eclipse-1.0.php
+ * This program and the accompanying materials are made available to you under
+ * the terms of the Eclipse Public License 1.0 which accompanies this
+ * distribution,
+ * and is available at https://www.eclipse.org/legal/epl-v10.html
  *
- *  (C) copyright CS29 Fine 2018-2019.
+ * SPDX-License-Identifier: EPL-1.0
  */
 package handist.glb.examples.uts;
 
