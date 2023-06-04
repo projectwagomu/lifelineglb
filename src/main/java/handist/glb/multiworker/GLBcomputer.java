@@ -1217,7 +1217,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 		for (final Place p : toStop) {
 			// For the places that remain, remove the lifelines to places to remove
-			asyncAt(p, () -> {
+			immediateAsyncAt(p, () -> {
 				transferWorkBeforeShutdown(toStop, toStopCount);
 			});
 		}
@@ -1615,8 +1615,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 	}
 
-	private void transferWorkBeforeShutdown(ArrayList<Place> toStop, GlobalRef<CountDownLatch> toStopCount)
-			throws InterruptedException {
+	private void transferWorkBeforeShutdown(ArrayList<Place> toStop, GlobalRef<CountDownLatch> toStopCount) {
 		mallShutdown.set(true);
 		shutdown = true;
 		lifelineAnswerLock.unblock();
@@ -1629,6 +1628,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 		int myWorkerCount = workerCount;
 		while (myWorkerCount > 0) {
+			workerLock.unblock();
 			synchronized (workerBags) {
 				myWorkerCount = workerCount;
 			}
@@ -1637,7 +1637,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 					+ ", lifelineAnswerThreadExited=" + lifelineAnswerThreadExited);
 			console.println("" + POOL);
 			if (myWorkerCount > 0) {
-				TimeUnit.MILLISECONDS.sleep(100);
+				try {
+					TimeUnit.MILLISECONDS.sleep(100);
+				} catch (InterruptedException e) {
+				}
 			}
 		}
 
@@ -1861,26 +1864,24 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				/*
 				 * 5. Yield if need be
 				 */
-				// TODO makes weird problems with mall but is not needed
-				// if (workerCount ==
-				// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get()
-				// && (POOL.hasQueuedSubmissions() || lifelineToAnswer)) {
-				// final Lock l = workerAvailableLocks.poll();
-				// if (l != null) {
-				// logger.workerYieldStart();
-				// try {
-				// ForkJoinPool.managedBlock(l);
-				// } catch (final InterruptedException e) {
-				// // Should not happen in practice as the implementation Lock does
-				// // not throw the InterruptedException
-				// e.printStackTrace();
-				// }
-				// logger.workerYieldStop();
-				//
-				// l.reset(); // Reset the lock after usage
-				// workerAvailableLocks.add(l);
-				// }
-				// }
+//				if (workerCount == GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get()
+//						&& (POOL.hasQueuedSubmissions() || lifelineToAnswer)) {
+//					final Lock l = workerAvailableLocks.poll();
+//					if (l != null) {
+//						logger.workerYieldStart();
+//						try {
+//							ForkJoinPool.managedBlock(l);
+//						} catch (final InterruptedException e) {
+//							// Should not happen in practice as the implementation Lock does
+//							// not throw the InterruptedException
+//							e.printStackTrace();
+//						}
+//						logger.workerYieldStop();
+//
+//						l.reset(); // Reset the lock after usage
+//						workerAvailableLocks.add(l);
+//					}
+//				}
 
 				/*
 				 * 6. Process its bag
