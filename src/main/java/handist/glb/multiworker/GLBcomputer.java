@@ -1127,13 +1127,12 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			e.printStackTrace();
 		}
 
-		final GlobalRef<CountDownLatch> continuedPlacesCoúnt = new GlobalRef<>(
-				new CountDownLatch(continuedPlaces.size()));
+		final GlobalRef<CountDownLatch> continuedPlacesCoúnt = new GlobalRef<>(new CountDownLatch(places().size()));
 
-		for (final Place continuedPlace : continuedPlaces) {
+		for (final Place p : places()) {
 			// Recalculate the lifeline for the continued places
 			try {
-				immediateAsyncAt(continuedPlace, () -> {
+				immediateAsyncAt(p, () -> {
 					try {
 						System.err.println("Re-calculating lifelines on " + here());
 						recalculateLifelinesAfterGrow(newPlaces);
