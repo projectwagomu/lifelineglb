@@ -47,39 +47,52 @@ import apgas.util.PlaceLocalObject;
 import handist.glb.multiworker.lifeline.LifelineStrategy;
 
 /**
- * Class {@link GLBcomputer} implements a lifeline-based work-stealing scheme between hosts with an
- * internal management that allows multiple workers to perform computation concurrently on the same
- * Java process.
+ * Class {@link GLBcomputer} implements a lifeline-based work-stealing scheme
+ * between hosts with an internal management that allows multiple workers to
+ * perform computation concurrently on the same Java process.
  *
- * <p>This {@link GLBcomputer} handles distributed computation that fits the {@link Bag} interface
- * using multiple concurrent workers on the same hosts. It follows the design proposed by Yamashita
- * and Kamada in their article <a href=
- * "https://www.jstage.jst.go.jp/article/ipsjjip/24/2/24_416/_article">Introducing a Multithread and
- * Multistage Mechanism for the Global Load Balancing Library of X10</a>. The current design does
- * not implement the multi-stage mechanisms described in their article.
+ * <p>
+ * This {@link GLBcomputer} handles distributed computation that fits the
+ * {@link Bag} interface using multiple concurrent workers on the same hosts. It
+ * follows the design proposed by Yamashita and Kamada in their article <a href=
+ * "https://www.jstage.jst.go.jp/article/ipsjjip/24/2/24_416/_article">Introducing
+ * a Multithread and Multistage Mechanism for the Global Load Balancing Library
+ * of X10</a>. The current design does not implement the multi-stage mechanisms
+ * described in their article.
  *
- * <p>The requirements on the kind of computation and the features available to the programmer are
- * further detailed in the documentation of classes {@link Bag} and {@link Fold}. The customization
- * possibilities of the load balance algorithm are presented in class {@link
- * GLBMultiWorkerConfiguration}.
+ * <p>
+ * The requirements on the kind of computation and the features available to the
+ * programmer are further detailed in the documentation of classes {@link Bag}
+ * and {@link Fold}. The customization possibilities of the load balance
+ * algorithm are presented in class {@link GLBMultiWorkerConfiguration}.
  *
- * <p>The work-stealing scheme is similar in spirit to the original lifeline-based Global Load
- * Balancer implemented in the X10 programming language. Inactive hosts passively wait for some work
- * to reach them through their lifelines to resume computation. The major difference with the
- * original scheme comes in the fact that this implementation accommodates for several concurrent
- * workers in a single Java process. Some load balance is performed internally to keep the workers
- * occupied as much as possible while still allowing remote hosts to steal work. The design relies
- * on two {@link Bag} instances that are kept aside to perform load balance. One is primarily in
- * charge of load balance operations between the workers running on the local host (member {@link
- * #intraPlaceQueue}) while the other in dedicated to steals from remote hosts (member {@link
- * #interPlaceQueue}).
+ * <p>
+ * The work-stealing scheme is similar in spirit to the original lifeline-based
+ * Global Load Balancer implemented in the X10 programming language. Inactive
+ * hosts passively wait for some work to reach them through their lifelines to
+ * resume computation. The major difference with the original scheme comes in
+ * the fact that this implementation accommodates for several concurrent workers
+ * in a single Java process. Some load balance is performed internally to keep
+ * the workers occupied as much as possible while still allowing remote hosts to
+ * steal work. The design relies on two {@link Bag} instances that are kept
+ * aside to perform load balance. One is primarily in charge of load balance
+ * operations between the workers running on the local host (member
+ * {@link #intraPlaceQueue}) while the other in dedicated to steals from remote
+ * hosts (member {@link #interPlaceQueue}).
+ * 
+ * <p>
+ * This implementation was then extended by Jonas Posner to make it malleable,
+ * i.e. capable of dynamically adding and removing places to the distributed
+ * program. The scheme is adapted to disconnect places to be removed from the
+ * work-stealing network and relocate the work they hold to continued places.
+ * When grow orders are received, the new places are connected to the
+ * work-stealing network so that they receive work through the usual
+ * work-stealing mechanism.
  *
- * @author Patrick Finnerty
- */
-
-/**
- * <R> type of the result produced by the computation <B> type of the
- * computation bag
+ * @author Patrick Finnerty, Jonas Posner
+ *
+ * @param <R> type of the result produced by the computation
+ * @param <B> type of the computation bag
  */
 public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> extends PlaceLocalObject
 		implements MalleableHandler {
@@ -263,9 +276,12 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 *      "https://github.com/x10-lang/apgas/blob/master/apgas/src/apgas/impl/GlobalRuntimeImpl.java">apgas/src/apgas/impl/GlobalRuntimeImpl.java</a>
 	 */
 	final ForkJoinPool POOL;
+
 	private SerializableSupplier<B> queueInitializer;
+
 	/** Random instance used to decide the victims of random steals. */
 	Random random;
+
 	/**
 	 * Instance in which the result of the computation performed at this place is
 	 * going to be stored. It is initialized with the given neutral element before
@@ -273,8 +289,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link #reset(SerializableSupplier, SerializableSupplier, SerializableSupplier, boolean, List, boolean)}.
 	 */
 	R result;
+
 	/** Initializer needed for malleability, when places are added at runtime */
 	private SerializableSupplier<R> resultInitializer;
+
 	/**
 	 * Places that can establish a lifeline on this place Access is protected by
 	 * synchronized {@link #lifelineLock}
@@ -287,6 +305,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 *
 	 * @see #run(Bag)
 	 */
+
 	volatile boolean shutdown;
 	/**
 	 * State of this place.
@@ -303,6 +322,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link #workerBags} as lock provider.
 	 */
 	volatile int state;
+
 	/**
 	 * Concurrent data structure for worker processes trying to yield. Each worker
 	 * must poll an available lock from this data structure before using it. This
@@ -311,6 +331,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * allowing a single worker to yield at the time.
 	 */
 	ConcurrentLinkedQueue<Lock> workerAvailableLocks;
+
 	/**
 	 * Collection of the {@link WorkerBag} of the inactive worker threads on this
 	 * place.
@@ -361,6 +382,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link PlaceLogger#workerYieldStop()}.
 	 */
 	int workerCount;
+
 	private SerializableSupplier<B> workerInitializer;
 	/**
 	 * Lock instance used by {@link #workerProcess(WorkerBag)} to yield their
@@ -1863,34 +1885,28 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				/*
 				 * 5. Yield if need be
 				 */
-//				if (workerCount == GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get()
-//						&& (POOL.hasQueuedSubmissions() || lifelineToAnswer)) {
-//					final Lock l = workerAvailableLocks.poll();
-//					if (l != null) {
-//						logger.workerYieldStart();
-//						try {
-//							ForkJoinPool.managedBlock(l);
-//						} catch (final InterruptedException e) {
-//							// Should not happen in practice as the implementation Lock does
-//							// not throw the InterruptedException
-//							e.printStackTrace();
-//						}
-//						logger.workerYieldStop();
-//
-//						l.reset(); // Reset the lock after usage
-//						workerAvailableLocks.add(l);
-//					}
-//				}
+				if (workerCount == GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get()
+						&& (POOL.hasQueuedSubmissions() || lifelineToAnswer)) {
+					final Lock l = workerAvailableLocks.poll();
+					if (l != null) {
+						logger.workerYieldStart();
+						try {
+							ForkJoinPool.managedBlock(l);
+						} catch (final InterruptedException e) {
+							// Should not happen in practice as the implementation Lock does
+							// not throw the InterruptedException
+							e.printStackTrace();
+						}
+						logger.workerYieldStop();
+
+						l.reset(); // Reset the lock after usage
+						workerAvailableLocks.add(l);
+					}
+				}
 
 				/*
 				 * 6. Process its bag
 				 */
-				// System.out.println(
-				// here()
-				// + "n="
-				// + GLBMultiWorkerConfiguration.GLB_MULTIWORKER_N.get()
-				// + ", bag.size="
-				// + bag.getCurrentTaskCount());
 				final int processedTasks = bag.process(GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_N.get(),
 						result);
 
