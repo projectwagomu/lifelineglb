@@ -1364,8 +1364,11 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * @param queueInitializer   supplier of empty queues for load balancing
 	 *                           purposes
 	 * @param workerInitializer  supplier of empty bag for workers
-	 * @param mall               called for malleabillity operations or not?
-	 * @param mall               are initial staticTasks available or not?
+	 * @param mall               indicates if it was called as a result of a
+	 *                           malleable change
+	 * @param addedPlaces        list of places that were added to the runtime as
+	 *                           part of a malleable grow operation
+	 * @param staticTasks        indicates if initial staticTasks available or not
 	 */
 	void reset(SerializableSupplier<R> resultInitSupplier, SerializableSupplier<B> queueInitializer,
 			SerializableSupplier<B> workerInitializer, final boolean mall, final List<Integer> addedPlaces,
@@ -1396,12 +1399,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 		// Removing old bags and getting some new ones
 		workerBags.clear();
-		for (int i = 0; i < GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get(); i++) { // We put as
-																											// many
-																											// new
-			// bags as there are possible concurrent workers
-			// called by computeDynamic: bags are empty
-			// called by computeStatic: bags contain already tasks
+		for (int i = 0; i < GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get(); i++) {
+			// We put as many new bags as there are possible concurrent workers called by
+			// computeDynamic: bags are empty
+			// called by computeStatic: bags already contain tasks
 			final WorkerBag workerBag = new WorkerBag(i, workerInitializer);
 			if (staticTasks) {
 				workerBag.initStaticTasks();
@@ -1549,18 +1550,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		} while (performLifelineSteals());
 
 		console.println("going to sleep, workerCount=" + workerCount);
-
-		// if (HOME.id == 0) {
-		// try {
-		// closeSocket();
-		// isSocketClosed = true;
-		// System.out.println("======================================================");
-		// console.println("close the socket");
-		// System.out.println("======================================================");
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
-		// }
 
 		// Shutdown the lifelineAnswerThread and the tuner thread
 		shutdown = true; // Flag used to signal to the activities they need to
