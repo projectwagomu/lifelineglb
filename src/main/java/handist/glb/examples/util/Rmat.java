@@ -29,13 +29,24 @@ import java.io.Serializable;
 public class Rmat implements Serializable {
 
 	private static final long serialVersionUID = 4041663809417906070L;
-	private final double a; // The next 4 parameters determine the shape of
-	private final double b; // the graph. A detailed description of the
-	private final double c; // parameters is out of scope here. Briefly,
-	private final double d; // (a+b+c+d == 1) and typically a>=b, a>= c, a>=d.
-	private final int n; // the log of the number of verties. I.e., N = 2^n
-	private final int N; // the number of vertices.
-	private final long seed; // seed to the random number generator
+
+	/**
+	 * The next 4 parameters determine the shape of
+	 * the graph. A detailed description of the
+	 * parameters is out of scope here. Briefly,
+	 * (a+b+c+d == 1) and typically a>=b, a>= c, a>=d.
+	 * the log of the number of verties. I.e., N = 2^n
+	 * the number of vertices.
+ 	 */
+
+	private final double a;
+	private final double b;
+	private final double c;
+	private final double d;
+	private final int n;
+	private final int N;
+	// seed to the random number generator
+	private final long seed;
 
 	public Rmat(long seed, int n, double a, double b, double c, double d) {
 		this.seed = seed;

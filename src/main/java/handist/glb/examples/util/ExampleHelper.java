@@ -34,9 +34,6 @@ public class ExampleHelper {
 		Configuration.CONFIG_APGAS_THREADS.setDefaultValue(6);
 		Configuration.CONFIG_APGAS_IMMEDIATE_THREADS.setDefaultValue(4);
 		Configuration.CONFIG_APGAS_BACKUPCOUNT.setDefaultValue(1);
-		// Configuration.APGAS_RESILIENT.setDefaultValue(false);
-		// Configuration.APGAS_CONSOLEPRINTER.setDefaultValue(true);
-		// Configuration.APGAS_VERBOSE_LAUNCHER.setDefaultValue(true);
 		GlobalRuntime.getRuntime();
 
 		if (verbose) {
@@ -57,7 +54,7 @@ public class ExampleHelper {
 					ForkJoinPool fj;
 					fj = (ForkJoinPool) GlobalRuntime.getRuntime().getExecutorService();
 					System.out.println(here() + " " + fj);
-				}, 0 /* Startverzögerung */, delay /* Dauer */, TimeUnit.SECONDS);
+				}, 0, delay, TimeUnit.SECONDS);
 			});
 		}
 	}

@@ -12,7 +12,6 @@ package handist.glb.examples.nqueens;
 
 public class NQueensResults {
 
-	/** Correct results for seed = 19 branching = 4 index == depth */
 	private static final long[] results = new long[] { 0, 1, 0, 0, 2, 10, /* 5 */
 			4, 40, 92, 352, 724, /* 10 */
 			2680, 14200, 73712, 365596, 2279184, /* 15 */
@@ -21,7 +20,7 @@ public class NQueensResults {
 
 	public static long getResult(int index) {
 		if (index > results.length - 1) {
-			System.out.println("UTSResults: depth " + index + " was requested, but ist not available");
+			System.out.println("NQueensResults: queens " + index + " was requested, but ist not available");
 			return 0;
 		}
 		return results[index];
@@ -29,7 +28,7 @@ public class NQueensResults {
 
 	public static boolean proveCorrectness(int index, long result) {
 		if (index > results.length - 1) {
-			System.out.println("UTSResults: depth " + index + " was requested, but ist not available");
+			System.out.println("NQueensResults: queens " + index + " was requested, but ist not available");
 			return false;
 		}
 		final boolean correctness = results[index] == result;

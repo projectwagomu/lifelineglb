@@ -165,7 +165,6 @@ public class MatMul implements Bag<MatMul, LongSum>, Serializable {
 		}
 		ConsolePrinter.getInstance().println("localWorkerID=" + localWorkerID + ", globalWorkerID=" + globalWorkerID
 				+ ", count of generated tasks=" + currentPos);
-		// printTaskQueues();
 	}
 
 	@Override
@@ -253,9 +252,7 @@ public class MatMul implements Bag<MatMul, LongSum>, Serializable {
 		final MatMul split = new MatMul(msize, bsize);
 
 		/*
-		 * 1/10 ist mit folgenden Konfiguration deutlich schneller (besseres Load
-		 * Balancing) als 1/2. Getestet am 09.12.20 in Kassel mit 1-8 Places, je 12
-		 * Worker: -m 288 -b 64, -m 576 -b 32
+		 * Stealing 1/10 appeared to be faster than 1/2
 		 */
 		final int splitSize = currentPos * 1 / 10;
 		while (split.x.length < splitSize) {

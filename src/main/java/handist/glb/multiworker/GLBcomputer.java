@@ -644,35 +644,19 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				 * queue
 				 */
 				synchronized (intraPlaceQueue) {
-					// console.println(
-					// "victim="
-					// + victim
-					// + " BEFORE merge "
-					// + ", loot.result="
-					// + loot.getResult()
-					// + ", intraPlaceQueue.result="
-					// + intraPlaceQueue.getResult());
-
 					intraPlaceQueue.merge(loot);
-
-					// console.println(
-					// "victim="
-					// + victim
-					// + " AFTER merge "
-					// + ", loot.result="
-					// + loot.getResult()
-					// + ", intraPlaceQueue.result="
-					// + intraPlaceQueue.getResult());
-
 					logger.intraQueueFed.incrementAndGet();
 					intraQueueEmpty = false;
 				}
 				if (waitLatch != null) {
 					waitLatch.get().countDown();
 				}
-				return; // Placing this return instruction allows us to put the run call
-			// out of the synchronized block without having to use an extra
-			// condition.
+				/*
+				 * Placing this return instruction allows us to put the run call
+				 * out of the synchronized block without having to use an extra
+				 * condition.
+				 */
+				return;
 
 			case -1:
 
@@ -722,13 +706,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 
 		if (startNewWorker) {
-			// There were no workers, method run is launched.
-			// important! new apgas: same as asyncAt(here(), f)
-			// console.println(
-			// "run new worker with async and loot.result="
-			// + loot.getResult()
-			// + ", loot.taskCount="
-			// + loot.getCurrentTaskCount());
 			console.println("start new worker, workerCount=" + workerCount);
 			async(() -> {
 				run(loot);
@@ -825,7 +802,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				/*
 				 * 2. Answer lifelines
 				 */
-
 				while (!lifelineThieves.isEmpty()) {
 					B loot;
 					synchronized (intraPlaceQueue) {
@@ -951,7 +927,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 				if (!isLifelineEstablished && isValidRemotePlace(lifelineID)) { // We check if the lifeline was
 					// previously established or not and if it is a valid place
-
 					logger.lifelineStealsAttempted.incrementAndGet();
 					lifelineEstablished.put(lifelineID, true);
 
@@ -1070,7 +1045,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 	/**
 	 * After new places were spawned, new GlbComputer instances need to be
-	 * instanciated on the new places. After that, these new places are integrated
+	 * instantiated on the new places. After that, these new places are integrated
 	 * into the lifeline network so that they can start stealing work from the
 	 * currently running places.
 	 */
@@ -1087,15 +1062,15 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			newPlaceIds.add(p.id);
 		}
 
-		// Prepare new GlbComputer objects on the new places
+		// Prepare new GLBcomputer objects on the new places
 		final GlobalRef<CountDownLatch> newPlacesCount = new GlobalRef<>(new CountDownLatch(newPlaces.size()));
 
 		for (final Place newPlace : newPlaces) {
 			try {
 				immediateAsyncAt(newPlace, () -> {
 					try {
-						System.err.println("Initializing GlbComputer on " + here());
-						// Create a GlbComputer instance and bind it to the existing GlobalId
+						System.err.println("Initializing GLBcomputer on " + here());
+						// Create a GLBcomputer instance and bind it to the existing GlobalId
 						final GLBcomputer<R, B> newComputer = new GLBcomputer<>();
 						newComputer.id = globalID;
 						globalID.putHere(newComputer);
@@ -1109,7 +1084,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 						});
 
 					} catch (final Exception e) {
-						System.err.println("Exception when initializing new GlbComputer on " + here());
+						System.err.println("Exception when initializing new GLBcomputer on " + here());
 						e.printStackTrace();
 						throw e;
 					}
@@ -1280,7 +1255,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			}
 			console.println("lifelineEstablished=" + lifelineEstablished);
 
-			// Establish lifeline on current place in stead of newly added places
+			// Establish lifeline on current place instead of newly added places
 			for (final int i : REVERSE_LIFELINE) {
 				if (addedPlaces.contains(place(i))) {
 					lifelineThieves.add(i);
@@ -1499,7 +1474,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		lifelineAnswerLock.reset();
 
 		// Spawn the lifeline answer thread
-		// important! new apgas: same as asyncAt(here(), f)
 		async(() -> {
 			lifelineAnswerThread();
 		});
@@ -1705,7 +1679,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	}
 
 	/**
-	 * Launches an distributed warm-up on each process in the distributed cluster.
+	 * Launches a distributed warm-up on each process in the distributed cluster.
 	 *
 	 * <p>
 	 * For some computations, it can be beneficial to launch a smaller problem

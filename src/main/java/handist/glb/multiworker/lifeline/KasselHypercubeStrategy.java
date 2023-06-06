@@ -16,15 +16,15 @@ import java.util.List;
 import apgas.Place;
 
 /**
- * Lifeline strategy implementing an hypercube lifeline strategy among places.
+ * Lifeline strategy implementing a hypercube lifeline strategy among places.
  *
  * <p>
- * A lifeline between two places exists if the edit distance between two place's
- * id's written in binary is 1.
+ * A lifeline between two places exists if the edit distance between two places
+ * ids written in binary is 1.
  *
  * @author Patrick Finnerty
  */
-public class MyHypercubeStrategy implements LifelineStrategy, Serializable {
+public class KasselHypercubeStrategy implements LifelineStrategy, Serializable {
 
 	/** Serial Version UID */
 	private static final long serialVersionUID = 5106410194659222967L;

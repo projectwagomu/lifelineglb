@@ -29,7 +29,6 @@ import handist.glb.multiworker.SerializableSupplier;
 public class StartSynthetic {
 
 	static final long BALLAST_DEFAULT = 0;
-	static final boolean STATICMODE_DEFAULT = false;
 	static final long TASK_DURATION_VARIANCE_DEFAULT = 20;
 
 	static final long TASKSPERWORKER_DEFAULT = 1_000_000;
@@ -87,12 +86,10 @@ public class StartSynthetic {
 				sum = glb.computeStatic(() -> new LongSum(0), queueInitializer, workerInitializer);
 
 			} else { // dynamic
-				// maxChildren=0, wird gleich durch initDynamic gesetzt
+				// maxChildren=0 will be replaced by initDynamic
 				final SyntheticQueue syntheticQueue = new SyntheticQueue(taskDurationVariance, 0, false);
 				expectedResult = syntheticQueue.initDynamic(tasksPerWorker, totalDuration, ballast);
 				final long _maxChildren = syntheticQueue.maxChildren;
-				// final float _variance = syntheticQueue.variance;
-				// final long _depth = syntheticQueue.depth;
 
 				glb = new GLBFactory<LongSum, SyntheticQueue>().setupGLB(places());
 

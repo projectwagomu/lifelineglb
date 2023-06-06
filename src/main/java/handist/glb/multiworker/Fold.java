@@ -13,7 +13,7 @@ package handist.glb.multiworker;
 import java.io.Serializable;
 
 /**
- * Abstraction of a result computed by the {@link GLBProcessor}. The programmer
+ * Abstraction of a result computed by the {@link GLBcomputer}. The programmer
  * can implement their own data structure implementing this interface and use it
  * as the {@link Bag}'s second parameter type.
  *

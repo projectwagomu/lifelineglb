@@ -17,11 +17,11 @@ import java.util.List;
 import apgas.Place;
 
 /**
- * Lifeline strategy implementing an hypercube lifeline strategy among places.
+ * Lifeline strategy implementing a hypercube lifeline strategy among places.
  *
  * <p>
- * A lifeline between two places exists if the edit distance between two place's
- * id's written in a certain base <em>z<em> is 1.
+ * A lifeline between two places exists if the edit distance between two place
+ * ids written in a certain base <em>z<em> is 1.
  *
  * @author Patrick Finnerty
  */

@@ -44,7 +44,6 @@ public class StartBC {
 		Configuration.printAllConfigs();
 		GLBMultiWorkerConfiguration.printAllConfigs();
 		final CommandLine cmd = parseArguments(args);
-		// ExampleHelper.printAllFJsScheduled(5);
 
 		final int seed = Integer.parseInt(cmd.getOptionValue("seed", String.valueOf(SEED_DEFAULT)));
 		final int n = Integer.parseInt(cmd.getOptionValue("n", String.valueOf(N_DEFAULT)));

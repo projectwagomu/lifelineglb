@@ -50,6 +50,6 @@ public class LongSum implements Fold<LongSum>, Serializable {
 
 	@Override
 	public String toString() {
-		return sum + "";
+		return String.valueOf(sum);
 	}
 }

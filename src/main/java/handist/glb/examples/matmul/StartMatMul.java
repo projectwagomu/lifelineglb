@@ -26,12 +26,6 @@ import handist.glb.multiworker.GLBMultiWorkerConfiguration;
 import handist.glb.multiworker.GLBcomputer;
 import handist.glb.multiworker.SerializableSupplier;
 
-/**
- * Matrix Multiplication benchmark
- *
- * @author Jonas Posner
- *
- */
 public class StartMatMul {
 
 	static final int BSIZE_DEFAULT = 4;
@@ -50,17 +44,16 @@ public class StartMatMul {
 
 		System.out.println("MatMul config:\n" + "  msize=" + msize + "\n" + "  bsize=" + bsize + "\n");
 
-		// final int workerPerPlace =
-		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_WORKERPERPLACE.get();
-		// final int max = places().size() * workerPerPlace;
-		// final int numberTasks = msize * msize;
-		// final int taskPerWorker = numberTasks / max;
+		 final int workerPerPlace =
+		 GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
+		 final int max = places().size() * workerPerPlace;
+		 final int numberTasks = msize * msize;
+		 final int taskPerWorker = numberTasks / max;
 
-		// Condition kommt aus MatMul.initStaticTasks()
-		// if ((taskPerWorker * max) != numberTasks) {
-		// System.out.println("Error in Parameters!!!!");
-		// System.exit(42);
-		// }
+		 if ((taskPerWorker * max) != numberTasks) {
+			 System.out.println("Error in Parameters!!!!");
+			 System.exit(42);
+		 }
 
 		final int repetitions = GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS.get();
 

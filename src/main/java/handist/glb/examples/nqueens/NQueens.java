@@ -205,12 +205,13 @@ public class NQueens implements Bag<NQueens, LongSum>, Serializable {
 
 	@Override
 	public NQueens split(boolean takeAll) {
-		// TODO return leeres NQueens Object oder null?
 		if ((size == 0) || (size == 1 && !takeAll)) {
 			return new NQueens(QUEENS, THRESHOLD, INIT_SIZE);
 		}
 
-		// TODO split half?
+		/*
+		 * Stealing 1/6 appeared to be faster than 1/2
+		 */
 		int otherHalf = size * (1 / 6);
 		if (otherHalf == 0) {
 			otherHalf = 1;

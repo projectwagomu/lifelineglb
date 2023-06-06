@@ -54,8 +54,6 @@ public class BC implements Bag<BC, DoubleArraySum>, Serializable {
 
 	int[] upper;
 
-	int workerId;
-
 	public BC(final int qSize) {
 		lower = new int[qSize];
 		upper = new int[qSize];

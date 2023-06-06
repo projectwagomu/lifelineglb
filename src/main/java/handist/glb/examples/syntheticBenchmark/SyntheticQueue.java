@@ -38,21 +38,9 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
 
 	@Override
 	public void initStaticTasks(int workerId) {
-		// final boolean addPlaces =
-		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get();
-		// final int mallPlaces =
-		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_MALLPLACES.get();
-		// final boolean mallEnabled =
-		// GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY.get();
 		final int workerPerPlace = GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
-
 		final int totalWorkers;
-		// if (addPlaces && mallEnabled && mallPlaces > 0) {
-		// // We increase the amount of work to InitPlaces+MallPlaces
-		// totalWorkers = workerPerPlace * (places().size() + mallPlaces);
-		// } else {
 		totalWorkers = workerPerPlace * places().size();
-		// }
 
 		final long taskCount = tasksPerWorker * totalWorkers;
 		long taskDuration = (1000L * 1000L * totalDuration * totalWorkers) / taskCount;
@@ -69,12 +57,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
 		taskDuration = (long) (totalWorkers * taskDuration * w[myWorkerID] / s);
 
 		final long localTasksPerWorker;
-		// if (addPlaces && mallEnabled && mallPlaces > 0) {
-		// // We increase the count of localTasksPerWorker
-		// localTasksPerWorker = taskCount / (workerPerPlace * places().size());
-		// } else {
 		localTasksPerWorker = tasksPerWorker;
-		// }
 
 		for (long i = 0; i < localTasksPerWorker; ++i) {
 			tasks.addLast(new SyntheticTask(taskBallast, taskDuration));
@@ -123,8 +106,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
 		}
 
 		// StaticSyn performs better if all tasks are taken out
-		// DynamicSyn performs better if it follows the steal half scheme from the
-		// original KobeGLB doku
+		// DynamicSyn performs better if it follows the steal half scheme
 		if (isStatic) {
 			if (takeAll) {
 				nStolen = tasks.size();

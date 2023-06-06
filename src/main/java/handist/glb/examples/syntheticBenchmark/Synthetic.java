@@ -48,9 +48,9 @@ public class Synthetic implements Serializable {
 	public float variance = 0;
 
 	/*
-	 * dynamic initialization On initialization one task is generated on place 0.
+	 * Dynamic initialization:
+	 * At initialization one task is generated on place 0.
 	 * Processing tasks can generate new tasks.
-	 *
 	 */
 	public Synthetic(final long durationVariance, final long maxChildren, boolean isStatic) {
 		this.durationVariance = durationVariance;
@@ -114,7 +114,7 @@ public class Synthetic implements Serializable {
 		long lastDepth = 1;
 		long lastChildren = 1;
 
-		// MaxTiefe=24, MaxBreite=8
+		// MaxDepth=24, MaxWidth=8
 		for (int d = 2; d < 24; ++d) {
 			for (int c = 2; c < 8; ++c) {
 				final long currentTasks = calculateTreeSize(d, c);
@@ -133,27 +133,11 @@ public class Synthetic implements Serializable {
 	}
 
 	public long initDynamic(final long tasksPerWorker, final long totalDuration, final long taskBallast) {
-		/*
-		 * final boolean addPlaces =
-		 * GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_ADD.get(); final int
-		 * mallPlaces =
-		 * GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY_MALLPLACES.get();
-		 * final boolean mallEnabled =
-		 * GLBMultiWorkerConfiguration.GLB_MULTIWORKER_MALLEABILITY.get();
-		 */
 		final int workerPerPlace = GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
-
 		final int totalWorkers;
 		final long localTasksPerWorker;
-		// if (addPlaces && mallEnabled && mallPlaces > 0) {
-		// // We increase the amount of work to InitPlaces+MallPlaces
-		// totalWorkers = workerPerPlace * (places().size() + mallPlaces);
-		// localTasksPerWorker = (totalWorkers * tasksPerWorker) / (places().size() *
-		// workerPerPlace);
-		// } else {
 		totalWorkers = workerPerPlace * places().size();
 		localTasksPerWorker = tasksPerWorker;
-		// }
 
 		final long depth = findTreeSize(localTasksPerWorker);
 		final long taskCount = calculateTreeSize(depth, maxChildren);
@@ -166,8 +150,9 @@ public class Synthetic implements Serializable {
 	}
 
 	/*
-	 * static initialization All tasks are evenly distributed on initialization. No
-	 * tasks are generated from tasks.
+	 * Static initialization:
+	 * All tasks are evenly distributed on initialization.
+	 * No tasks are generated from tasks.
 	 */
 	public void initStatic(long taskBallast, long tasksPerWorker, long totalDuration, long durationVariance) {
 		maxChildren = 0;
