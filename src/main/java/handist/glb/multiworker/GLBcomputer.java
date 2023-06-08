@@ -652,9 +652,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 					waitLatch.get().countDown();
 				}
 				/*
-				 * Placing this return instruction allows us to put the run call
-				 * out of the synchronized block without having to use an extra
-				 * condition.
+				 * Placing this return instruction allows us to put the run call out of the
+				 * synchronized block without having to use an extra condition.
 				 */
 				return;
 
@@ -1405,18 +1404,24 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 		console.println("lifelineEstablished=" + lifelineEstablished);
 
-		// We dont want to open lifelines (lifelineEstablished.put(i) should always
+		// We dont want to open lifelines (lifelineEstablished.put(i) should always be
 		// false
 		if (staticTasks) {
 			return;
 		}
 
 		// We establish lifelines on this place for initial work-stealing conditions
-		for (final int i : REVERSE_LIFELINE) {
-			if (!isValidRemotePlace(i) || i == 0 || mall) {
-				continue;
+		// This is not done in this place is being newly created as part of a malleable
+		// grow operation.
+		if (!mall) {
+			for (final int i : REVERSE_LIFELINE) {
+				if (i == 0 || !isValidPlace(i)) {
+					// Avoid establishing lifelines back to place 0 as this place already has all
+					// the work when starting a new computation
+					continue;
+				}
+				lifelineThieves.add(i);
 			}
-			lifelineThieves.add(i);
 		}
 		console.println("lifelineThieves=" + lifelineThieves);
 	}
