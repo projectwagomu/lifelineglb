@@ -8,10 +8,24 @@ The source code presented in this repository extends this scheme to make it mall
 ## Build instructions
 
 This project requires Java 11 or greater and Maven to compile the library.
-This elastic global load balancer relies on a malleable implementation of the APGAS for Java library. This implementation can be found [here](https://github.com/projectwagomu/apgas). To compile the library, use command:
 
+This elastic global load balancer relies on a malleable implementation of the APGAS for Java library. This implementation can be found [here](https://github.com/projectwagomu/apgas). You should first install this library in your local Maven repository using the following commands:
+
+```shell
+cd ~
+git clone https://github.com/projectwagomu/apgas.git apgas
+cd apgas
+git checkout 0.0.1
+mvn install
 ```
-$ mvn package
+
+Then, to compile this project, clone this repository and compile it with the following commands:
+
+```shell
+cd ~
+git clone https://github.com/projectwagomu/lifelineglb.git lifelineglb
+cd lifelineglb
+mvn package
 ```
 
 ## Launching a computation
