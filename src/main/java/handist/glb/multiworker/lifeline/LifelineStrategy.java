@@ -44,9 +44,9 @@ public interface LifelineStrategy {
 	/**
 	 * Needed for malleability for determine the temporary inside the placesList
 	 *
-	 * @param home
-	 * @param placesList
-	 * @return id in list
+	 * @param home       place id
+	 * @param placesList list of the place participating in the computation
+	 * @return the index in the list of places of the "home" place
 	 */
 	default int findMyIdInList(final int home, final List<? extends Place> placesList) {
 		for (int i = 0; i < placesList.size(); i++) {

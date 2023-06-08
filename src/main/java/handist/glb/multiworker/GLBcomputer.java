@@ -140,7 +140,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 *
 	 * @see #getLog()
 	 */
-	Logger computationLog;
+	private Logger computationLog;
 
 	/**
 	 * Array containing a flag for each worker (the worker's id is used as index in
@@ -151,7 +151,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * when they feed the {@link #interPlaceQueue} as part of their main routine
 	 * {@link #workerProcess(WorkerBag)}.
 	 */
-	AtomicIntegerArray feedInterQueueRequested;
+	private AtomicIntegerArray feedInterQueueRequested;
 
 	/** Place this instance is located on */
 	final Place HOME;
@@ -167,9 +167,12 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link #interPlaceQueue}.
 	 */
 	B intraPlaceQueue;
+
 	/** Flag used to signal the fact member {@link #intraPlaceQueue} is empty */
 	volatile boolean intraQueueEmpty;
+
 	private final long[] lastPrint;
+
 	/**
 	 * Lifelines this place can establish. Access is protected by synchronized
 	 * {@link #lifelineLock}
@@ -183,6 +186,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link #lifelineAnswerThread()}.
 	 */
 	Lock lifelineAnswerLock;
+
 	/**
 	 * Flag used to confirm that the lifelineAnswerThread has exited. This prevents
 	 * a potential bug where a lifeline answer comes just as the old lifeline answer
@@ -197,6 +201,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * new one.
 	 */
 	volatile boolean lifelineAnswerThreadExited;
+
 	/**
 	 * Collection used to keep track of the lifelines this place has established on
 	 * other places.
@@ -208,9 +213,12 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * member for every potential lifeline established by this place.
 	 */
 	ConcurrentHashMap<Integer, Boolean> lifelineEstablished;
+
 	final Object lifelineLock = new Object();
+
 	/** Holds the lifelineStrategy */
 	private final LifelineStrategy lifelineStrategy;
+
 	/**
 	 * Collection used to record the lifeline thieves that have requested some work
 	 * from this place but could not be given some work straight away as part of
@@ -219,6 +227,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * work becomes available.
 	 */
 	ConcurrentLinkedQueue<Integer> lifelineThieves;
+
 	/**
 	 * Flag used by {@link #workerProcess(WorkerBag)} to signal that one of them has
 	 * unblocked the progress of the lifelineAnswer thread and that it needs to
@@ -235,6 +244,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * {@link #lifelineAnswerThread()}.
 	 */
 	volatile boolean lifelineToAnswer;
+
 	/**
 	 * Logger instance used to log the runtime of the {@link GLBcomputer} instance
 	 * located at place {@link #HOME}.
@@ -246,14 +256,18 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * to this method are made following a computation.
 	 */
 	boolean logsGiven;
+
 	/** Integer reflecting the current highest place ID. Needed for malleability */
 	AtomicInteger mallHighestPlaceID;
+
 	/** List containing all old removed places because of malleability */
 	private final ConcurrentLinkedQueue<Integer> mallRemovedPlaces;
+
 	/**
 	 * Flag used to signal that this place will be shutdown because of malleability.
 	 */
 	AtomicBoolean mallShutdown;
+
 	/**
 	 * ForkJoinPool of the APGAS runtime used at this place to process the
 	 * activities. This member is kept in order for asynchronous
@@ -364,6 +378,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 * computation fragment in method {@link #collectResult()}.
 	 */
 	final ConcurrentLinkedQueue<WorkerBag> workerBags;
+
 	/**
 	 * Keep tracks of the number of {@link #workerProcess(WorkerBag)} launched on
 	 * this place. Access is protected by synchronized blocks with

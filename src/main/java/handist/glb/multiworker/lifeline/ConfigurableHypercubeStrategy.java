@@ -21,7 +21,7 @@ import apgas.Place;
  *
  * <p>
  * A lifeline between two places exists if the edit distance between two place
- * ids written in a certain base <em>z<em> is 1.
+ * ids written in a certain base <em>z</em> is 1.
  *
  * @author Patrick Finnerty
  */

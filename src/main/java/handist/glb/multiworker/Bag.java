@@ -84,17 +84,25 @@ import java.io.Serializable;
  */
 public interface Bag<B extends Bag<B, R> & Serializable, R extends Fold<R> & Serializable> {
 
-	/** Returns for the count of tasks, which are currently in the queue. */
+	/**
+	 * Returns for the count of tasks, which are currently in the queue
+	 * 
+	 * @return number of tasks currently in the queue
+	 */
 	public long getCurrentTaskCount();
 
-	/** Returns for the result produced by this fragment of the computation. */
+	/**
+	 * Returns for the result produced by this fragment of the computation
+	 * 
+	 * @return the result
+	 */
 	public R getResult();
 
 	/**
 	 * Initializes statically known tasks. Only needed when using computeStatic().
 	 * If so, it is automatically called from GLBComputer
 	 *
-	 * @param workerId
+	 * @param workerId the worker id whose tasks need to be prepared
 	 */
 	void initStaticTasks(int workerId);
 

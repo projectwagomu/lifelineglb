@@ -71,7 +71,7 @@ public class Logger {
 	/**
 	 * Prints all PlaceLogs
 	 *
-	 * @param printStream
+	 * @param printStream the stream to which the logs should be printed to
 	 */
 	public void printAll(PrintStream printStream) {
 		for (final PlaceLogger placeLogger : placeLogs.values()) {
