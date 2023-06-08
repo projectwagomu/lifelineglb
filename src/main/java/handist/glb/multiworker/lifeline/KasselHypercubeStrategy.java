@@ -24,10 +24,28 @@ import apgas.Place;
  *
  * @author Patrick Finnerty
  */
-public class KobeHypercubeStrategy implements LifelineStrategy, Serializable {
+public class KasselHypercubeStrategy implements LifelineStrategy, Serializable {
 
 	/** Serial Version UID */
 	private static final long serialVersionUID = 5106410194659222967L;
+
+	public int computeL(int numPlaces) {
+		int l = 1;
+		while (Math.pow(l, l) < numPlaces) {
+			l++;
+		}
+		return l;
+	}
+
+	public int computeZ(int l, int numPlaces) {
+		int z0 = 1;
+		int zz = l;
+		while (zz < numPlaces) {
+			z0++;
+			zz *= l;
+		}
+		return z0;
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -36,28 +54,11 @@ public class KobeHypercubeStrategy implements LifelineStrategy, Serializable {
 	 */
 	@Override
 	public int[] lifeline(final int home, List<? extends Place> placesList) {
-		final int myId = findMyIdInList(home, placesList);
 		final int nbPlaces = placesList.size();
-
-		int count = 0;
-		int mask = 1;
-		int l;
-		while ((l = myId ^ mask) < nbPlaces) {
-			count++;
-			mask *= 2;
-		}
-
-		final int toReturn[] = new int[count];
-
-		mask = 1;
-		int index = 0;
-		while ((l = myId ^ mask) < nbPlaces) {
-			toReturn[index] = placesList.get(l).id;
-			index++;
-			mask *= 2;
-		}
-
-		return toReturn;
+		final ConfigurableHypercubeStrategy chs = new ConfigurableHypercubeStrategy();
+		chs.setL(computeL(nbPlaces));
+		chs.setZ(computeZ(chs.getL(), nbPlaces));
+		return chs.lifeline(home, placesList);
 	}
 
 	/*
@@ -67,6 +68,10 @@ public class KobeHypercubeStrategy implements LifelineStrategy, Serializable {
 	 */
 	@Override
 	public int[] reverseLifeline(int target, List<? extends Place> placesList) {
-		return lifeline(target, placesList);
+		final int nbPlaces = placesList.size();
+		final ConfigurableHypercubeStrategy chs = new ConfigurableHypercubeStrategy();
+		chs.setL(computeL(nbPlaces));
+		chs.setZ(computeZ(chs.getL(), nbPlaces));
+		return chs.reverseLifeline(target, placesList);
 	}
 }

@@ -24,11 +24,18 @@ head -n 4 hostfile > $HOSTFILE
 cat $HOSTFILE
 echo ">>>>"
 
-HOST_FOR_EXPAND1=`tail -n 2 hostfile | head -n 1`
-HOST_FOR_EXPAND2=`tail -n 1 hostfile`
+HOST_FOR_GROW1=`tail -n 2 hostfile | head -n 1`
+HOST_FOR_GROW2=`tail -n 1 hostfile`
 
 # Launch a GLB program
 MAINPRGM= java -cp "../target/*" \
+        --add-modules java.se \
+        --add-exports java.base/jdk.internal.ref=ALL-UNNAMED \
+        --add-opens java.base/java.lang=ALL-UNNAMED \
+        --add-opens java.base/java.nio=ALL-UNNAMED \
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-opens java.management/sun.management=ALL-UNNAMED \
+        --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED \
         -Dapgas.verbose.launcher=true \
         -Dapgas.places=4 \
         -Dapgas.threads=8 \
@@ -43,11 +50,11 @@ MAINPRGM= java -cp "../target/*" \
 
 sleep 15
 echo "##### INITIATING MALLEABLE GROWTH #####"
-java -cp "../target/*" apgas.testing.MalleableOrder expand 2 $HOST_FOR_EXPAND1 $HOST_FOR_EXPAND2
+java -cp "../target/*" apgas.impl.elastic.MalleableOrder grow 2 $HOST_FOR_GROW1 $HOST_FOR_GROW2
 
 echo "##### INITIATING MALLEABLE SHRINK #####"
 sleep 10
-java -cp "../target/*" apgas.testing.MalleableOrder shrink 1
+java -cp "../target/*" apgas.impl.elastic.MalleableOrder shrink 1
 
 wait $MAINPRGM
 
