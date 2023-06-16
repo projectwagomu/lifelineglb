@@ -15,7 +15,7 @@ This elastic global load balancer relies on a malleable implementation of the AP
 cd ~
 git clone https://github.com/projectwagomu/apgas.git apgas
 cd apgas
-git checkout 0.0.1
+git checkout v0.0.1
 mvn install
 ```
 
