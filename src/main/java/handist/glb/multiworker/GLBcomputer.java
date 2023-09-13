@@ -10,17 +10,6 @@
  */
 package handist.glb.multiworker;
 
-import static apgas.Constructs.async;
-import static apgas.Constructs.asyncAt;
-import static apgas.Constructs.defineMalleableHandle;
-import static apgas.Constructs.finish;
-import static apgas.Constructs.here;
-import static apgas.Constructs.immediateAsyncAt;
-import static apgas.Constructs.isDead;
-import static apgas.Constructs.place;
-import static apgas.Constructs.places;
-import static apgas.Constructs.uncountedAsyncAt;
-
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -45,6 +34,8 @@ import apgas.util.GlobalID;
 import apgas.util.GlobalRef;
 import apgas.util.PlaceLocalObject;
 import handist.glb.multiworker.lifeline.LifelineStrategy;
+
+import static apgas.Constructs.*;
 
 /**
  * Class {@link GLBcomputer} implements a lifeline-based work-stealing scheme
@@ -558,6 +549,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 		console.println("after finish run, workerCount=" + workerCount);
 
+		if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			disableMalleableCommunicator();
+		}
+
 		final long computationFinish = System.nanoTime();
 		// We gather the result back into place 0
 		collectAllResult();
@@ -601,6 +596,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			t.printStackTrace(System.out);
 		}
 		console.println("after finish run, workerCount=" + workerCount);
+
+		if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
+			disableMalleableCommunicator();
+		}
 
 		final long computationFinish = System.nanoTime();
 		// We gather the result back into place 0
@@ -916,7 +915,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 *         {@code false} otherwise
 	 */
 	boolean performLifelineSteals() {
-		if (places().size() < 2) {
+		console.println("places()=" + places() + ", mallHighestPlaceID=" + mallHighestPlaceID.get());
+		if (places().size() < 2 || places().size() > (mallHighestPlaceID.get() + 1) ) {
 			return false;
 		}
 
@@ -1003,7 +1003,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 *         {@code false} otherwise
 	 */
 	boolean performRandomSteals() {
-		if (places().size() < 2) {
+		console.println("places()=" + places() + ", mallHighestPlaceID=" + mallHighestPlaceID.get());
+		if (places().size() < 2 || places().size() > (mallHighestPlaceID.get() + 1) ) {
 			return false;
 		}
 
