@@ -1117,7 +1117,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			e.printStackTrace();
 		}
 
-		final GlobalRef<CountDownLatch> continuedPlacesCoúnt = new GlobalRef<>(new CountDownLatch(places().size()));
+		final GlobalRef<CountDownLatch> continuedPlacesCount = new GlobalRef<>(new CountDownLatch(places().size()));
 
 		for (final Place p : places()) {
 			// Recalculate the lifeline for the continued places
@@ -1132,8 +1132,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 						throw e;
 					}
 
-					immediateAsyncAt(continuedPlacesCoúnt.home(), () -> {
-						continuedPlacesCoúnt.get().countDown();
+					immediateAsyncAt(continuedPlacesCount.home(), () -> {
+						continuedPlacesCount.get().countDown();
 					});
 				});
 			} catch (final Exception e) {
@@ -1144,7 +1144,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 
 		try {
-			continuedPlacesCoúnt.get().await();
+			continuedPlacesCount.get().await();
 		} catch (final InterruptedException e) {
 			e.printStackTrace();
 		}
