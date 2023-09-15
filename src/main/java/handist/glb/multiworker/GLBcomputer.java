@@ -1543,7 +1543,26 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 			} while (performRandomSteals());
 		} while (performLifelineSteals());
 
-		console.println("going to sleep, workerCount=" + workerCount);
+		console.println("going to sleep, workerCount=" + workerCount + ", state=" + state);
+
+		//Only for debugging, print out results of this place
+		console.println("intraPlaceQueue.result=" + intraPlaceQueue.getResult() + ", taskCount="
+				+ intraPlaceQueue.getCurrentTaskCount());
+		console.println("interPlaceQueue.result=" + interPlaceQueue.getResult() + ", taskCount="
+				+ interPlaceQueue.getCurrentTaskCount());
+		for (final WorkerBag wb : workerBags) {
+			console.println("workbag.id=" + wb.workerId + ", wb.bag.result=" + wb.bag.getResult()
+					+ ", taskCount=" + wb.bag.getCurrentTaskCount());
+		}
+
+//Jonas for bug testing (glb-jonas-bug2-uts-localhost.sh)
+//In APGAS : SocketMalleableCommunicator : malleableShrink must be made public
+//(and hostReleased() can be removed for local testing)
+//		if (here().id == 0) {
+//			GlobalRuntimeImpl.getRuntime().malleableCommunicator.malleableShrink(1);
+//		}
+
+
 
 		// Shutdown the lifelineAnswerThread and the tuner thread
 		shutdown = true; // Flag used to signal to the activities they need to
