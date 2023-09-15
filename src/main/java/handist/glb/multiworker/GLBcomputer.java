@@ -930,6 +930,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				boolean isLifelineEstablished = false;
 				try {
 					isLifelineEstablished = lifelineEstablished.get(lifelineID);
+					//TODO because of removed "places() < 2" some exceptions are thrown here
+					//not nice but makes the program not incorrect
 				} catch (final Exception e) {
 					console.println("caught Exception, lifeline=" + lifelineID + ", lifelineEstablished="
 							+ lifelineEstablished);
