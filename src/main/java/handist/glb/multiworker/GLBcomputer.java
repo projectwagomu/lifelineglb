@@ -1227,7 +1227,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 		for (final Place p : toStop) {
 			// For the places that remain, remove the lifelines to places to remove
-			immediateAsyncAt(p, () -> {
+			asyncAt(p, () -> {
 				transferWorkBeforeShutdown(toStop, toStopCount);
 			});
 		}
