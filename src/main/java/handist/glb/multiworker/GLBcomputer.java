@@ -916,9 +916,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 */
 	boolean performLifelineSteals() {
 		console.println("places()=" + places() + ", mallHighestPlaceID=" + mallHighestPlaceID.get());
-		if (places().size() < 2 || places().size() > (mallHighestPlaceID.get() + 1) ) {
-			return false;
-		}
 
 		if (mallShutdown.get()) {
 			console.println("cancel because of mall");
