@@ -927,16 +927,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 				final int lifelineID = LIFELINE[i];
 
-				boolean isLifelineEstablished = false;
-				try {
-					isLifelineEstablished = lifelineEstablished.get(lifelineID);
-					//TODO because of removed "places() < 2" some exceptions are thrown here
-					//not nice but makes the program not incorrect
-				} catch (final Exception e) {
-					console.println("caught Exception, lifeline=" + lifelineID + ", lifelineEstablished="
-							+ lifelineEstablished);
-					e.printStackTrace(System.out);
-				}
+				boolean isLifelineEstablished = lifelineEstablished.getOrDefault(lifelineID, false);
 
 				if (!isLifelineEstablished && isValidRemotePlace(lifelineID)) { // We check if the lifeline was
 					// previously established or not and if it is a valid place
