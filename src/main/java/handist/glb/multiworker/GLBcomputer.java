@@ -10,6 +10,18 @@
  */
 package handist.glb.multiworker;
 
+import static apgas.Constructs.async;
+import static apgas.Constructs.asyncAt;
+import static apgas.Constructs.defineMalleableHandle;
+import static apgas.Constructs.disableMalleableCommunicator;
+import static apgas.Constructs.finish;
+import static apgas.Constructs.here;
+import static apgas.Constructs.immediateAsyncAt;
+import static apgas.Constructs.isDead;
+import static apgas.Constructs.place;
+import static apgas.Constructs.places;
+import static apgas.Constructs.uncountedAsyncAt;
+
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -34,8 +46,6 @@ import apgas.util.GlobalID;
 import apgas.util.GlobalRef;
 import apgas.util.PlaceLocalObject;
 import handist.glb.multiworker.lifeline.LifelineStrategy;
-
-import static apgas.Constructs.*;
 
 /**
  * Class {@link GLBcomputer} implements a lifeline-based work-stealing scheme
@@ -918,7 +928,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		console.println("places()=" + places() + ", mallHighestPlaceID=" + mallHighestPlaceID.get());
 
 		if (mallShutdown.get()) {
-			console.println("cancel because of mall");
+			console.println("Cancel lifeline steals because a malleable change is ongoing");
 			return false;
 		}
 
@@ -994,7 +1004,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 	 */
 	boolean performRandomSteals() {
 		console.println("places()=" + places() + ", mallHighestPlaceID=" + mallHighestPlaceID.get());
-		if (places().size() < 2 || places().size() > (mallHighestPlaceID.get() + 1) ) {
+		if (places().size() < 2 || places().size() > (mallHighestPlaceID.get() + 1)) {
 			return false;
 		}
 
@@ -1198,8 +1208,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		final GlobalRef<CountDownLatch> lifelineCount = new GlobalRef<>(new CountDownLatch(toContinue.size()));
 
 		for (final Place p : toContinue) {
-			// For the places to be removed: stop stealing, send work and intermediary
-			// results away to other places
+			// For the places that remain, remove the lifelines to the places that will be
+			// removed
 			immediateAsyncAt(p, () -> {
 				recalculateLifelinesBeforeShrink(largestId, toContinue, toStop);
 				immediateAsyncAt(lifelineCount.home(), () -> {
@@ -1207,6 +1217,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 				});
 			});
 		}
+
+		// Wait on completion of above operation on continued places
 		try {
 			lifelineCount.get().await();
 		} catch (final InterruptedException e) {
@@ -1216,7 +1228,8 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		final GlobalRef<CountDownLatch> toStopCount = new GlobalRef<>(new CountDownLatch(toStop.size()));
 
 		for (final Place p : toStop) {
-			// For the places that remain, remove the lifelines to places to remove
+			// For the places to be removed: stop stealing, send work and intermediary
+			// results away to other places
 			asyncAt(p, () -> {
 				transferWorkBeforeShutdown(toStop, toStopCount);
 			});
@@ -1535,24 +1548,15 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
 		console.println("going to sleep, workerCount=" + workerCount + ", state=" + state);
 
-		//Only for debugging, print out results of this place
+		// Only for debugging, print out results of this place
 		console.println("intraPlaceQueue.result=" + intraPlaceQueue.getResult() + ", taskCount="
 				+ intraPlaceQueue.getCurrentTaskCount());
 		console.println("interPlaceQueue.result=" + interPlaceQueue.getResult() + ", taskCount="
 				+ interPlaceQueue.getCurrentTaskCount());
 		for (final WorkerBag wb : workerBags) {
-			console.println("workbag.id=" + wb.workerId + ", wb.bag.result=" + wb.bag.getResult()
-					+ ", taskCount=" + wb.bag.getCurrentTaskCount());
+			console.println("workbag.id=" + wb.workerId + ", wb.bag.result=" + wb.bag.getResult() + ", taskCount="
+					+ wb.bag.getCurrentTaskCount());
 		}
-
-//Jonas for bug testing (glb-jonas-bug2-uts-localhost.sh)
-//In APGAS : SocketMalleableCommunicator : malleableShrink must be made public
-//(and hostReleased() can be removed for local testing)
-//		if (here().id == 0) {
-//			GlobalRuntimeImpl.getRuntime().malleableCommunicator.malleableShrink(1);
-//		}
-
-
 
 		// Shutdown the lifelineAnswerThread and the tuner thread
 		shutdown = true; // Flag used to signal to the activities they need to
@@ -1628,6 +1632,16 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 		}
 	}
 
+	/**
+	 * Routine used to cleanup the GLB runtime on a place removed from the
+	 * computation as a result of a malleable change in resources.
+	 *
+	 * @param toStop      list of places that are stopping (and to whom the
+	 *                    remaining work cannot be sent to)
+	 * @param toStopCount counter used to track the completion of this operation
+	 *                    back on place 0. It should be decremented upon completion
+	 *                    of this operation
+	 */
 	private void transferWorkBeforeShutdown(ArrayList<Place> toStop, GlobalRef<CountDownLatch> toStopCount) {
 		mallShutdown.set(true);
 		shutdown = true;
