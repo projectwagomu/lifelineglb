@@ -10,46 +10,44 @@
  */
 package handist.glb.examples.util;
 
+import handist.glb.multiworker.Fold;
 import java.io.Serializable;
 
-import handist.glb.multiworker.Fold;
-
 /**
- * Implementation of the {@link Fold} interface that performs the addition on
- * {@code long} integers. The class also implements interface
- * {@link Serializable} in order to be used by the GLB library.
+ * Implementation of the {@link Fold} interface that performs the addition on {@code long} integers.
+ * The class also implements interface {@link Serializable} in order to be used by the GLB library.
  *
  * @author Patrick Finnerty
  */
 public class LongSum implements Fold<LongSum>, Serializable {
 
-	/** Serial Version UID */
-	private static final long serialVersionUID = 3582168956043482749L;
+  /** Serial Version UID */
+  private static final long serialVersionUID = 3582168956043482749L;
 
-	/** Long in which the sum is performed */
-	public long sum;
+  /** Long in which the sum is performed */
+  public long sum;
 
-	/**
-	 * Constructor
-	 *
-	 * @param s initial value for the sum
-	 */
-	public LongSum(long s) {
-		sum = s;
-	}
+  /**
+   * Constructor
+   *
+   * @param s initial value for the sum
+   */
+  public LongSum(long s) {
+    sum = s;
+  }
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see apgas.glb.Fold#fold(apgas.glb.Fold)
-	 */
-	@Override
-	public void fold(LongSum f) {
-		sum += f.sum;
-	}
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.Fold#fold(apgas.glb.Fold)
+   */
+  @Override
+  public void fold(LongSum f) {
+    sum += f.sum;
+  }
 
-	@Override
-	public String toString() {
-		return String.valueOf(sum);
-	}
+  @Override
+  public String toString() {
+    return String.valueOf(sum);
+  }
 }

@@ -10,150 +10,148 @@
  */
 package handist.glb.multiworker.lifeline;
 
+import apgas.Place;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import apgas.Place;
-
 /**
  * Lifeline strategy implementing a hypercube lifeline strategy among places.
  *
- * <p>
- * A lifeline between two places exists if the edit distance between two place
- * ids written in a certain base <em>z</em> is 1.
+ * <p>A lifeline between two places exists if the edit distance between two place ids written in a
+ * certain base <em>z</em> is 1.
  *
  * @author Patrick Finnerty
  */
 public class ConfigurableHypercubeStrategy implements LifelineStrategy, Serializable {
 
-	/** Serial Version UID */
-	private static final long serialVersionUID = 5106410194659222967L;
+  /** Serial Version UID */
+  private static final long serialVersionUID = 5106410194659222967L;
 
-	private int l = 2;
-	private int z = 2;
+  private int l = 2;
+  private int z = 2;
 
-	public void decrementl() {
-		l--;
-	}
+  public void decrementl() {
+    l--;
+  }
 
-	public void decrementZ() {
-		z--;
-	}
+  public void decrementZ() {
+    z--;
+  }
 
-	public int getL() {
-		return l;
-	}
+  public int getL() {
+    return l;
+  }
 
-	public int getZ() {
-		return z;
-	}
+  public void setL(int l) {
+    this.l = l;
+  }
 
-	public void incrementL() {
-		l++;
-	}
+  public int getZ() {
+    return z;
+  }
 
-	public void incrementZ() {
-		z++;
-	}
+  public void setZ(int z) {
+    this.z = z;
+  }
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see apgas.glb.LifelineStrategy#lifeline(int, int)
-	 */
-	@Override
-	public int[] lifeline(final int home, List<? extends Place> placesList) {
-		if (z < 1 || l < 1) {
-			System.out.println("Error: z=" + z + ", l=" + l);
-		}
+  public void incrementL() {
+    l++;
+  }
 
-		final int myId = findMyIdInList(home, placesList);
-		final int nbPlaces = placesList.size();
+  public void incrementZ() {
+    z++;
+  }
 
-		final int[] result = new int[z];
-		int x = 1;
-		int t = 0;
-		for (int j = 0; j < z; j++) {
-			int v = myId;
-			for (int k = 1; k < l; k++) {
-				v = v - v % (x * l) + (v + x * l - x) % (x * l);
-				if (v < nbPlaces) {
-					result[t] = placesList.get(v).id;
-					t++;
-					break;
-				}
-			}
-			x *= l;
-		}
-		return removeMinusOnes(result);
-	}
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.LifelineStrategy#lifeline(int, int)
+   */
+  @Override
+  public int[] lifeline(final int home, List<? extends Place> placesList) {
+    if (z < 1 || l < 1) {
+      System.out.println("Error: z=" + z + ", l=" + l);
+    }
 
-	private int[] removeMinusOnes(int[] input) {
-		final List<Integer> list = new ArrayList<>();
-		for (final int i : input) {
-			if (i < 0) {
-				continue;
-			}
-			list.add(i);
-		}
-		final int[] result = new int[list.size()];
-		for (int i = 0; i < result.length; i++) {
-			result[i] = list.get(i);
-		}
-		return result;
-	}
+    final int myId = findMyIdInList(home, placesList);
+    final int nbPlaces = placesList.size();
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see apgas.glb.LifelineStrategy#reverseLifeline(int, int)
-	 */
-	@Override
-	public int[] reverseLifeline(int home, List<? extends Place> placesList) {
-		if (z < 1 || l < 1) {
-			System.out.println("Error: z=" + z + ", l=" + l);
-		}
+    final int[] result = new int[z];
+    int x = 1;
+    int t = 0;
+    for (int j = 0; j < z; j++) {
+      int v = myId;
+      for (int k = 1; k < l; k++) {
+        v = v - v % (x * l) + (v + x * l - x) % (x * l);
+        if (v < nbPlaces) {
+          result[t] = placesList.get(v).id;
+          t++;
+          break;
+        }
+      }
+      x *= l;
+    }
+    return removeMinusOnes(result);
+  }
 
-		final int myId = findMyIdInList(home, placesList);
-		final int nbPlaces = placesList.size();
+  private int[] removeMinusOnes(int[] input) {
+    final List<Integer> list = new ArrayList<>();
+    for (final int i : input) {
+      if (i < 0) {
+        continue;
+      }
+      list.add(i);
+    }
+    final int[] result = new int[list.size()];
+    for (int i = 0; i < result.length; i++) {
+      result[i] = list.get(i);
+    }
+    return result;
+  }
 
-		final int nodecountPerEdge = l;
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.LifelineStrategy#reverseLifeline(int, int)
+   */
+  @Override
+  public int[] reverseLifeline(int home, List<? extends Place> placesList) {
+    if (z < 1 || l < 1) {
+      System.out.println("Error: z=" + z + ", l=" + l);
+    }
 
-		final int[] predecessors = new int[z];
-		int mathPower_nodecoutPerEdge_I = 1;
-		for (int i = 0; i < z; i++) {
-			final int vectorLength = (myId / mathPower_nodecoutPerEdge_I) % nodecountPerEdge;
+    final int myId = findMyIdInList(home, placesList);
+    final int nbPlaces = placesList.size();
 
-			if (vectorLength + 1 == nodecountPerEdge
-					|| (predecessors[i] = myId + mathPower_nodecoutPerEdge_I) >= nbPlaces) {
+    final int nodecountPerEdge = l;
 
-				predecessors[i] = myId - (vectorLength * mathPower_nodecoutPerEdge_I);
+    final int[] predecessors = new int[z];
+    int mathPower_nodecoutPerEdge_I = 1;
+    for (int i = 0; i < z; i++) {
+      final int vectorLength = (myId / mathPower_nodecoutPerEdge_I) % nodecountPerEdge;
 
-				if (predecessors[i] == myId) {
-					predecessors[i] = -1;
-				}
-			}
-			mathPower_nodecoutPerEdge_I *= nodecountPerEdge;
-		}
+      if (vectorLength + 1 == nodecountPerEdge
+          || (predecessors[i] = myId + mathPower_nodecoutPerEdge_I) >= nbPlaces) {
 
-		final int[] pre = new int[predecessors.length];
-		for (int i = 0; i < predecessors.length; i++) {
-			if (predecessors[i] < 0) {
-				pre[i] = predecessors[i];
-			} else {
-				pre[i] = placesList.get(predecessors[i]).id;
-			}
-		}
+        predecessors[i] = myId - (vectorLength * mathPower_nodecoutPerEdge_I);
 
-		return removeMinusOnes(pre);
-	}
+        if (predecessors[i] == myId) {
+          predecessors[i] = -1;
+        }
+      }
+      mathPower_nodecoutPerEdge_I *= nodecountPerEdge;
+    }
 
-	public void setL(int l) {
-		this.l = l;
-	}
+    final int[] pre = new int[predecessors.length];
+    for (int i = 0; i < predecessors.length; i++) {
+      if (predecessors[i] < 0) {
+        pre[i] = predecessors[i];
+      } else {
+        pre[i] = placesList.get(predecessors[i]).id;
+      }
+    }
 
-	public void setZ(int z) {
-		this.z = z;
-	}
+    return removeMinusOnes(pre);
+  }
 }
