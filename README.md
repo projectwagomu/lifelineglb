@@ -1,9 +1,10 @@
 # Elastic Lifeline-Based Global Load Balancer
 
-This project contains the source code for a malleable lifeline-based global load balancer.
+This project contains the source code for a _malleable_ and _evolving_ lifeline-based global load balancer.
 The design of the load balancing scheme is derived from the lifeline-based global load balancer first implemented in X10 and which was later extended to support multiple workers per process and [ported to Java](https://github.com/handist/JavaGLB).
 
-The source code presented in this repository extends this scheme to make it malleable, that is, capable of dynamically increasing and decreasing the number of processes used to perform the computation.
+The source code presented in this repository extends this scheme to make it both malleable and evolving.
+Thus, programs are able to dynamically increase and decrease the number of processes used to perform computation at runtime.
 
 ## Build instructions
 
@@ -15,7 +16,7 @@ This elastic global load balancer relies on a malleable implementation of the AP
 cd ~
 git clone https://github.com/projectwagomu/apgas.git apgas
 cd apgas
-git checkout v0.0.2
+git checkout v0.0.3
 mvn install
 ```
 
@@ -45,5 +46,6 @@ This software is released under the terms of the [Eclipse Public License v1.0](L
 In alphabetical order:
 
 - Patrick Finnerty
+- Raoul Goebel
 - Takuma Kanzaki
 - Jonas Posner

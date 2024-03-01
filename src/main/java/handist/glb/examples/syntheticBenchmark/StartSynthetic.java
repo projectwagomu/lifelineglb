@@ -90,14 +90,16 @@ public class StartSynthetic {
 
         final SerializableSupplier<SyntheticQueue> workerInitializer =
             () -> {
-              final SyntheticQueue sq = new SyntheticQueue(taskDurationVariance, 0, true);
+              final SyntheticQueue sq =
+                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration);
               sq.initStatic(ballast, tasksPerWorker, totalDuration, taskDurationVariance);
               return sq;
             };
 
         final SerializableSupplier<SyntheticQueue> queueInitializer =
             () -> {
-              final SyntheticQueue s = new SyntheticQueue(taskDurationVariance, 0, true);
+              final SyntheticQueue s =
+                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration);
               return s;
             };
 
@@ -107,7 +109,8 @@ public class StartSynthetic {
 
       } else { // dynamic
         // maxChildren=0 will be replaced by initDynamic
-        final SyntheticQueue syntheticQueue = new SyntheticQueue(taskDurationVariance, 0, false);
+        final SyntheticQueue syntheticQueue =
+            new SyntheticQueue(taskDurationVariance, 0, false, totalDuration);
         expectedResult = syntheticQueue.initDynamic(tasksPerWorker, totalDuration, ballast);
         final long _maxChildren = syntheticQueue.maxChildren;
 
@@ -117,7 +120,7 @@ public class StartSynthetic {
             glb.computeDynamic(
                 syntheticQueue,
                 () -> new LongSum(0),
-                () -> new SyntheticQueue(taskDurationVariance, _maxChildren, false));
+                () -> new SyntheticQueue(taskDurationVariance, _maxChildren, false, totalDuration));
       }
 
       System.out.println(
@@ -137,6 +140,8 @@ public class StartSynthetic {
       glb.getLog().printAll(System.out);
       System.out.println();
       System.out.println("#############################################################");
+      System.out.println("Exp Result: " + expectedResult);
+      System.out.println("Cal Result: " + sum.sum);
       System.out.println("Result is " + (expectedResult != sum.sum ? "NOT " : "") + "correct");
       System.out.println("#############################################################");
       System.out.println();

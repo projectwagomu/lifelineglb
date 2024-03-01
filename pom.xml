@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.projectwagomu</groupId>
 	<artifactId>lifelineglb</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<name>An elastic implementation of the lifeline-based Global Load Balancer</name>
 
 	<properties>
@@ -17,7 +17,7 @@
 		<dependency>
 			<groupId>com.github.projectwagomu</groupId>
 			<artifactId>apgas</artifactId>
-			<version>0.0.2</version>
+			<version>0.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>

@@ -10,8 +10,11 @@
  */
 package handist.glb.examples.syntheticBenchmark;
 
+import static apgas.Constructs.here;
 import static apgas.Constructs.places;
 
+import apgas.impl.GlobalRuntimeImpl;
+import apgas.util.ConsolePrinter;
 import handist.glb.multiworker.GLBMultiWorkerConfiguration;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
@@ -31,6 +34,7 @@ public class Synthetic implements Serializable {
   public float variance = 0;
   protected long count = 0;
   protected transient Random randGen = new Random();
+
   protected long result = 0;
   protected long taskBallast;
   protected long tasksPerWorker;
@@ -42,11 +46,16 @@ public class Synthetic implements Serializable {
    * At initialization one task is generated on place 0.
    * Processing tasks can generate new tasks.
    */
-  public Synthetic(final long durationVariance, final long maxChildren, boolean isStatic) {
+  public Synthetic(
+      final long durationVariance,
+      final long maxChildren,
+      boolean isStatic,
+      final long totalDuration) {
     this.durationVariance = durationVariance;
     variance = durationVariance / 100.0f;
     this.maxChildren = maxChildren;
     this.isStatic = isStatic;
+    this.totalDuration = totalDuration;
   }
 
   private static int fibonacci(int a) {
@@ -60,18 +69,9 @@ public class Synthetic implements Serializable {
     final long before = bean.getCurrentThreadCpuTime();
     final long after = bean.getCurrentThreadCpuTime();
     final long beanDuration = after - before;
-
     final SyntheticTask task = tasks.pollLast();
     randGen.setSeed(task.seed);
-    if (task.depth > 0) {
-      final SyntheticTask[] newTasks = new SyntheticTask[(int) maxChildren];
-      for (int i = 0; i < maxChildren; ++i) {
-        newTasks[i] =
-            new SyntheticTask(
-                task.ballast.length, task.seed + randGen.nextInt(), task.depth - 1, task.duration);
-      }
-      tasks.pushArrayLast(newTasks);
-    }
+
     long taskDuration;
     if (maxChildren > 0) {
       final long x1 = (long) ((1 - variance) * task.duration);
@@ -94,6 +94,111 @@ public class Synthetic implements Serializable {
       current = current2;
     }
     diff = processedTime - taskDuration;
+
+    // Generate an unbalanced tree with values from findTreeSize
+    if (task.depth > 0) {
+      final SyntheticTask[] newTasks = new SyntheticTask[(int) maxChildren];
+      for (int i = 1; i <= maxChildren; ++i) {
+        long newTaskID = task.taskID * maxChildren + i;
+        int myI = i - 1;
+        newTasks[myI] =
+            new SyntheticTask(
+                task.ballast.length,
+                task.seed + randGen.nextInt(),
+                task.depth - 1,
+                task.duration,
+                newTaskID,
+                task.totalNumberOfTasks,
+                task.realDepth,
+                task.branch,
+                task.durationTree);
+      }
+      tasks.pushArrayLast(newTasks);
+    } else if (task.depth == 0) { // The Last level of the tree reached
+      // Used to connect a long branch with only one child per parent
+      long idLastNodeRight = (long) Math.pow(maxChildren, task.realDepth - 1);
+      if (task.taskID == idLastNodeRight) { // unten rechts
+        if (task.branch) {
+          ConsolePrinter.getInstance()
+              .printlnAlways(
+                  "[SyntheticTree] "
+                      + here()
+                      + " : Starts tree generation "
+                      + (System.nanoTime() - GlobalRuntimeImpl.getRuntime().startupTime) / 1e9
+                      + " Seconds after Program start.");
+          ConsolePrinter.getInstance()
+              .printlnAlways("[SyntheticTree] " + here() + " : idLastNodeRight:" + idLastNodeRight);
+          ConsolePrinter.getInstance()
+              .printlnAlways(
+                  "[SyntheticTree] " + here() + " : Branch starts here with following parameters:");
+          ConsolePrinter.getInstance()
+              .printlnAlways("[SyntheticTree] " + here() + " : totalDuration: " + totalDuration);
+          ConsolePrinter.getInstance()
+              .printlnAlways(
+                  "[SyntheticTree] "
+                      + here()
+                      + " : numTasks: "
+                      + GLBMultiWorkerConfiguration.GLBOPTION_SYNTH_BRANCH.get());
+          // Branch duration should be double the duration of the part of the tree before the
+          // branch.
+          long taskDurationBranch =
+              (1000L * 1000L * totalDuration * 2)
+                  / GLBMultiWorkerConfiguration.GLBOPTION_SYNTH_BRANCH.get();
+          ConsolePrinter.getInstance()
+              .printlnAlways(
+                  "[SyntheticTree] " + here() + " : taskDurationBranch: " + taskDurationBranch);
+          ConsolePrinter.getInstance()
+              .printlnAlways("[SyntheticTree] " + here() + " : diff: " + diff);
+          SyntheticTask newTask =
+              new SyntheticTask(
+                  task.ballast.length,
+                  task.seed + randGen.nextInt(),
+                  -1,
+                  taskDurationBranch,
+                  0,
+                  task.totalNumberOfTasks,
+                  task.realDepth,
+                  false,
+                  task.durationTree);
+          tasks.addLast(newTask);
+        }
+      }
+    } else if (task.depth == -1) { // Branch starts here
+      if (task.taskID
+          < GLBMultiWorkerConfiguration.GLBOPTION_SYNTH_BRANCH.get() - 1) { // Creating Branch
+        long newTaskId = task.taskID + 1;
+        SyntheticTask newTask =
+            new SyntheticTask(
+                task.ballast.length,
+                task.seed + randGen.nextInt(),
+                -1,
+                task.duration,
+                newTaskId,
+                task.totalNumberOfTasks,
+                task.realDepth,
+                false,
+                task.durationTree);
+        tasks.addLast(newTask);
+
+      } else { // Branch is complete - generate root for a new tree from the last node of branch.
+        ConsolePrinter.getInstance()
+            .printlnAlways(
+                "[SyntheticTree] Second Tree started, Branch generation finished "
+                    + (System.nanoTime() - GlobalRuntimeImpl.getRuntime().startupTime) / 1e9
+                    + " Seconds after Program start.");
+        tasks.addLast(
+            new SyntheticTask(
+                task.ballast.length,
+                0,
+                task.realDepth - 1,
+                task.durationTree,
+                0,
+                task.totalNumberOfTasks,
+                task.realDepth,
+                task.branch,
+                task.durationTree));
+      }
+    }
   }
 
   long calculateTreeSize(long d, long c) {
@@ -133,6 +238,7 @@ public class Synthetic implements Serializable {
 
   public long initDynamic(
       final long tasksPerWorker, final long totalDuration, final long taskBallast) {
+    this.totalDuration = totalDuration;
     final int workerPerPlace =
         GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
     final int totalWorkers;
@@ -154,8 +260,23 @@ public class Synthetic implements Serializable {
             + tasksPerWorker
             + ", localTasksPerWorker="
             + localTasksPerWorker);
-    tasks.addLast(new SyntheticTask(taskBallast, 0, depth - 1, taskDuration));
-    return taskCount;
+    /*
+     * If GLBOPTION_SYNTH_TREE is set to evotree a bigger tree will be created.
+     * Each node is a task; the total nodes will be double the amount of the
+     * original tree plus the size of the added branch.
+     * Return taskCount for expected value to compare calculated result to.
+     */
+    if (GLBMultiWorkerConfiguration.GLBOPTION_SYNTH_TREE.get().equals("evotree")) {
+      tasks.addLast(
+          new SyntheticTask(
+              taskBallast, 0, depth - 1, taskDuration, 0, taskCount, depth, true, taskDuration));
+      return taskCount * 2 + GLBMultiWorkerConfiguration.GLBOPTION_SYNTH_BRANCH.get();
+    } else { // Original synthetic dynamic benchmark
+      tasks.addLast(
+          new SyntheticTask(
+              taskBallast, 0, depth - 1, taskDuration, 0, taskCount, depth, false, taskDuration));
+      return taskCount;
+    }
   }
 
   /*

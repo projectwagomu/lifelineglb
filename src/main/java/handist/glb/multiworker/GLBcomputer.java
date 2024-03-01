@@ -10,22 +10,15 @@
  */
 package handist.glb.multiworker;
 
-import static apgas.Constructs.async;
-import static apgas.Constructs.asyncAt;
-import static apgas.Constructs.defineMalleableHandle;
-import static apgas.Constructs.disableMalleableCommunicator;
-import static apgas.Constructs.finish;
-import static apgas.Constructs.here;
-import static apgas.Constructs.immediateAsyncAt;
-import static apgas.Constructs.isDead;
-import static apgas.Constructs.place;
-import static apgas.Constructs.places;
-import static apgas.Constructs.uncountedAsyncAt;
+import static apgas.Constructs.*;
 
 import apgas.Configuration;
 import apgas.Constructs;
 import apgas.GlobalRuntime;
 import apgas.Place;
+import apgas.impl.GlobalRuntimeImpl;
+import apgas.impl.elastic.EvolvingHandler;
+import apgas.impl.elastic.GetCpuLoad;
 import apgas.impl.elastic.MalleableHandler;
 import apgas.util.ConsolePrinter;
 import apgas.util.GlobalID;
@@ -86,7 +79,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
  * @param <B> type of the computation bag
  */
 public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable>
-    extends PlaceLocalObject implements MalleableHandler {
+    extends PlaceLocalObject implements MalleableHandler, EvolvingHandler {
 
   /** Printing Helper */
   private static final ConsolePrinter console = ConsolePrinter.getInstance();
@@ -385,6 +378,14 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     workerAvailableLocks.add(workerLock);
   }
 
+  public int getTaskCountOfWorkerBags() {
+    int tasksInBags = 0;
+    for (WorkerBag bag : workerBags) {
+      tasksInBags += (int) bag.bag.getCurrentTaskCount();
+    }
+    return tasksInBags;
+  }
+
   /**
    * Sends the order to all places to gather their results in their {@link #result} member before
    * sending it to place 0. This is done asynchronously, this method will block until all places
@@ -473,7 +474,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
     // We set the malleable handler to `this` if in malleable mode
     if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-      defineMalleableHandle(this);
+      defineMalleableHandler(this);
     }
 
     // We launch the computation
@@ -484,6 +485,24 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     try {
       finish(
           () -> {
+            // Dirty Fix: defineEvolvingHandler must be called inside finish,
+            // otherwise, tasks could be lost when shrinking.
+            // We set the evolving handler to `this` and
+            // choose a task-based load if in evolving mode.
+            if (Configuration.CONFIG_APGAS_ELASTIC
+                .get()
+                .equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+              if (Configuration.CONFIG_APGAS_EVOLVING_MODE.get().equals("cpu")) {
+                GetCpuLoad load = new GetCpuLoad();
+                defineEvolvingHandler(this, load);
+              }
+              if (Configuration.CONFIG_APGAS_EVOLVING_MODE.get().equals("task")) {
+                GetTaskLoad load = new GetTaskLoad();
+                load.setGLBcomputer(this);
+                defineEvolvingHandler(this, load);
+              }
+            }
+
             run(work);
           });
     } catch (final Throwable t) {
@@ -492,8 +511,9 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
     console.println("after finish run, workerCount=" + workerCount);
 
-    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-      disableMalleableCommunicator();
+    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)
+        || Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+      disableElasticCommunicator();
     }
 
     final long computationFinish = System.nanoTime();
@@ -519,7 +539,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
     // We set the malleable handler to `this` if in malleable mode
     if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-      defineMalleableHandle(this);
+      defineMalleableHandler(this);
     }
 
     // We launch the computation
@@ -531,6 +551,24 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     try {
       finish(
           () -> {
+            // Dirty Fix: defineEvolvingHandler must be called inside finish,
+            // otherwise, tasks could be lost when shrinking.
+            // We set the evolving handler to `this` and
+            // choose a task-based load if in evolving mode.
+            if (Configuration.CONFIG_APGAS_ELASTIC
+                .get()
+                .equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+              if (Configuration.CONFIG_APGAS_EVOLVING_MODE.get().equals("cpu")) {
+                GetCpuLoad load = new GetCpuLoad();
+                defineEvolvingHandler(this, load);
+              }
+              if (Configuration.CONFIG_APGAS_EVOLVING_MODE.get().equals("task")) {
+                GetTaskLoad load = new GetTaskLoad();
+                load.setGLBcomputer(this);
+                defineEvolvingHandler(this, load);
+              }
+            }
+
             for (final Place p : places()) {
               asyncAt(
                   p,
@@ -545,8 +583,9 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
     console.println("after finish run, workerCount=" + workerCount);
 
-    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)) {
-      disableMalleableCommunicator();
+    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_MALLEABLE)
+        || Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+      disableElasticCommunicator();
     }
 
     final long computationFinish = System.nanoTime();
@@ -771,7 +810,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
               break;
             }
             console.println(
-                "BEFORE performing interPlaceQueue.split(true) and interPlaceQueue should now contain tasks, interPlaceQueue.isEmpty="
+                "BEFORE performing interPlaceQueue.split(true) and interPlaceQueue should now contain tasks empty, interPlaceQueue.isEmpty="
                     + interQueueEmpty
                     + ", interPlaceQueue.size()="
                     + interPlaceQueue.getCurrentTaskCount()
@@ -804,6 +843,13 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
                 });
           } catch (final Throwable t) {
             t.printStackTrace(System.out);
+            console.printlnAlways(
+                "could not sent to "
+                    + lifelineThief
+                    + "/"
+                    + place(lifelineThief)
+                    + " merge the loot back into interPlaceQueue. However, this should never happen!!!!");
+            this.interPlaceQueue.merge(loot);
           }
           logger.lifelineStealsSuffered.incrementAndGet();
         }
@@ -962,7 +1008,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
 
     if (mallShutdown.get()) {
-      console.println("cancel because of mall");
+      console.println("Cancel because of mall"); // victim is shutting down.
       return false;
     }
 
@@ -982,7 +1028,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
         return false;
       }
       final Place victim = place(victimID);
-      console.println("sends steal request to random=" + victim + ", workerCount=" + workerCount);
+      console.println("Sends steal request to random=" + victim + ", workerCount=" + workerCount);
       final int h = HOME.id;
       final GlobalRef<CountDownLatch> waitLatch = new GlobalRef<>(new CountDownLatch(1));
       try {
@@ -1011,6 +1057,15 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     return false;
   }
 
+  /** Nothing in particular needs to be performed before a grow order is put into place. */
+  @Override
+  public void preGrow(int nbPlaces) {
+    long before = System.nanoTime();
+    System.err.println("preGrow called");
+    long preGrowTimeGLB = System.nanoTime() - before;
+    Constructs.sendToScheduler("preGrowTimeGLB;" + nbPlaces + ";" + preGrowTimeGLB);
+  }
+
   /**
    * After new places were spawned, new GlbComputer instances need to be instantiated on the new
    * places. After that, these new places are integrated into the lifeline network so that they can
@@ -1019,7 +1074,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
   @Override
   public void postGrow(
       int nbPlaces, List<? extends Place> continuedPlaces, List<? extends Place> newPlaces) {
-    System.err.println("postGrow called");
+    ConsolePrinter.getInstance().printlnAlways("postGrow called");
     long before = System.nanoTime();
     final GlobalID globalID = getId(this);
     final SerializableSupplier<R> _resultInitializer = resultInitializer;
@@ -1041,12 +1096,15 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
             newPlace,
             () -> {
               try {
-                System.err.println("Initializing GLBcomputer on " + here());
+                ConsolePrinter.getInstance().printlnAlways("Initializing GLBcomputer on " + here());
                 // Create a GLBcomputer instance and bind it to the existing GlobalId
                 final GLBcomputer<R, B> newComputer = new GLBcomputer<>();
                 newComputer.id = globalID;
                 globalID.putHere(newComputer);
 
+                // Set the new GLBComputer for loadEvaluation
+                GetTaskLoad load = new GetTaskLoad();
+                load.setGLBcomputer(newComputer);
                 // Reset it so that it prepares the necessary data structures to start stealing
                 newComputer.reset(
                     _resultInitializer,
@@ -1091,7 +1149,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
             p,
             () -> {
               try {
-                System.err.println("Re-calculating lifelines on " + here());
+                ConsolePrinter.getInstance().printlnAlways("Re-calculating lifelines on " + here());
                 recalculateLifelinesAfterGrow(newPlaces);
               } catch (final Exception e) {
                 System.err.println("Exception when refreshing lifelines on " + here());
@@ -1120,44 +1178,20 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
 
     long postGrowTimeGLB = System.nanoTime() - before;
-    Constructs.sendToScheduler("postGrowTimeGLB;" + newPlaces.size() + ";" + postGrowTimeGLB);
+    sendToScheduler("postGrowTimeGLB;" + newPlaces.size() + ";" + postGrowTimeGLB);
     System.err.println("Malleable growth completed");
   }
 
   /**
-   * After the reduction in the number of running places, nothing in particular needs to be
-   * performed
-   */
-  @Override
-  public void postShrink(int nbPlaces, List<? extends Place> removedPlaces) {
-    long before = System.nanoTime();
-    System.err.println("postShrink called");
-    long postShrinkTimeGLB = System.nanoTime() - before;
-    Constructs.sendToScheduler(
-        "postShrinkTimeGLB;" + removedPlaces.size() + ";" + postShrinkTimeGLB);
-  }
-
-  /** Nothing in particular needs to be performed before a grow order is put into place. */
-  @Override
-  public void preGrow(int nbPlaces) {
-    long before = System.nanoTime();
-    System.err.println("preGrow called");
-    long preGrowTimeGLB = System.nanoTime() - before;
-    Constructs.sendToScheduler("preGrowTimeGLB;" + nbPlaces + ";" + preGrowTimeGLB);
-  }
-
-  /**
-   * When a shrink order is received, the places chosen to be removed are cut off from the lifeline
-   * network and their work is sent back to remaining places. Their intermediary result also needs
-   * to be transferred back to remaining places to be merged.
+   * Malleable preShrink When a shrink order is received, the places chosen to be removed are cut
+   * off from the lifeline network and their work is sent back to remaining places. Their
+   * intermediary result also needs to be transferred back to remaining places to be merged.
    *
    * <p>In this implementation, we always choose the places with the largest IDs to be released.
    */
   @Override
   public List<Place> preShrink(int nbPlaces) {
-    System.err.println("preShrink called");
-    long before = System.nanoTime();
-
+    ConsolePrinter.getInstance().printlnAlways("preShrink called");
     // Choose the places that are going to be shut down
     final int currentNumberPlaces = places().size();
     final int numberPlacesAfterShutdown = currentNumberPlaces - nbPlaces;
@@ -1179,6 +1213,36 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
         toStop.add(p);
       }
     }
+    return preShrink(toStop);
+  }
+
+  /**
+   * Evolving preShrink When a shrink order is triggered, the places chosen to be removed are cut
+   * off from the lifeline network and their work is sent back to remaining places. Their
+   * intermediary result also needs to be transferred back to remaining places to be merged.
+   *
+   * <p>In this variant the place to shrink is known, so it is given as parameter.
+   */
+  @Override
+  public List<Place> preShrink(ArrayList<Place> placesToShrink) {
+    System.err.println("preShrink called");
+    long before = System.nanoTime();
+
+    // Choose the places that are going to be shut down
+    final int currentNumberPlaces = places().size();
+    final int numberPlacesAfterShutdown =
+        currentNumberPlaces - placesToShrink.size(); // -1 for this version
+    int largestIDRemaining = -1;
+
+    final ArrayList<Place> toContinue = new ArrayList<>(places());
+    toContinue.removeAll(placesToShrink);
+
+    for (final Place p : toContinue) {
+      if (p.id > largestIDRemaining) {
+        largestIDRemaining = p.id;
+      }
+    }
+
     final int largestId = largestIDRemaining;
 
     final GlobalRef<CountDownLatch> lifelineCount =
@@ -1190,7 +1254,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
       immediateAsyncAt(
           p,
           () -> {
-            recalculateLifelinesBeforeShrink(largestId, toContinue, toStop);
+            recalculateLifelinesBeforeShrink(largestId, toContinue, placesToShrink);
             immediateAsyncAt(
                 lifelineCount.home(),
                 () -> {
@@ -1198,7 +1262,6 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
                 });
           });
     }
-
     try {
       lifelineCount.get().await();
     } catch (final InterruptedException e) {
@@ -1206,16 +1269,14 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
 
     final GlobalRef<CountDownLatch> toStopCount =
-        new GlobalRef<>(new CountDownLatch(toStop.size()));
+        new GlobalRef<>(new CountDownLatch(placesToShrink.size()));
 
-    for (final Place p : toStop) {
-      // For the places that stop, transfer work to remaining places
-      // must be asyncAt (and NOT immediate) so that the following deal()
-      // (toStop -> toRemain) will be included in the overall finish!
+    for (final Place p : placesToShrink) {
+      // For the places that remain, remove the lifelines to places to remove
       asyncAt(
           p,
           () -> {
-            transferWorkBeforeShutdown(toStop, toStopCount);
+            transferWorkBeforeShutdown(placesToShrink, toStopCount);
           });
     }
 
@@ -1224,9 +1285,24 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     } catch (final InterruptedException e) {
       e.printStackTrace();
     }
+
     long preShrinkTimeGLB = System.nanoTime() - before;
-    Constructs.sendToScheduler("preShrinkTimeGLB;" + nbPlaces + ";" + preShrinkTimeGLB);
-    return toStop;
+    Constructs.sendToScheduler(
+        "preShrinkTimeGLB;" + placesToShrink.size() + ";" + preShrinkTimeGLB);
+    return placesToShrink;
+  }
+
+  /**
+   * After the reduction in the number of running places, nothing in particular needs to be
+   * performed
+   */
+  @Override
+  public void postShrink(int nbPlaces, List<? extends Place> removedPlaces) {
+    long before = System.nanoTime();
+    System.err.println("postShrink called");
+    long postShrinkTimeGLB = System.nanoTime() - before;
+    Constructs.sendToScheduler(
+        "postShrinkTimeGLB;" + removedPlaces.size() + ";" + postShrinkTimeGLB);
   }
 
   /**
@@ -1277,7 +1353,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
   /**
    * Routine called on the places that will remain with the runtime just before the shrink is
    * performed. These places will re-compute their lifelines and discard any lifeline connecting to
-   * a place which is about to be removed as part of the shrink operation
+   * a place which is about to be removed as part of the shrink operation.
    *
    * @param highestID the largest place ID for the places that remain in the runtime
    * @param allRemainingPlaces the places that will still be participating in the runtime after the
@@ -1297,7 +1373,10 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
       console.println("before lifelineThieves=" + lifelineThieves);
       for (final Place p : removedPlaces) {
         mallRemovedPlaces.add(p.id);
-        lifelineThieves.remove(p.id);
+        // sometimes lifelineThieves contains duplicated entries which should never happen
+        while (lifelineThieves.contains(p.id)) {
+          lifelineThieves.remove(p.id);
+        }
         lifelineEstablished.put(
             p.id, true); // hack preventing the re-establishment of a lifeline on a place
         // about to stop, the lifeline is actually not established
@@ -1318,7 +1397,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
 
   /**
    * Sets all the boolean in array {@link #feedInterQueueRequested} to {@code true}. Is called when
-   * a it is noticed that member {@link #interPlaceQueue} is empty. This will make the workers send
+   * it is noticed that a member {@link #interPlaceQueue} is empty. This will make the workers send
    * part of their work this queue.
    */
   void requestInterQueueFeed() {
@@ -1409,7 +1488,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     }
     console.println("lifelineEstablished=" + lifelineEstablished);
 
-    // We dont want to open lifelines (lifelineEstablished.put(i) should always be
+    // We do not want to open lifelines (lifelineEstablished.put(i) should always be
     // false
     if (staticTasks) {
       return;
@@ -1474,7 +1553,17 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
    * @param b the initial bag to compute.
    */
   void run(B b) {
-    console.println("new worker starts, workerCount=" + workerCount);
+    // Dirty fixing "tasks could be lost when shrinking"
+    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+      final int _myid = here().id;
+      immediateAsyncAt(
+          place(0),
+          () -> {
+            GlobalRuntimeImpl.getRuntime().EVOLVING.placeActiveRef.get().put(_myid, true);
+          });
+    }
+
+    console.println("New worker starts, workerCount=" + workerCount);
 
     // Wait until the previous lifeline exited
     while (!lifelineAnswerThreadExited) {
@@ -1545,28 +1634,16 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
       } while (performRandomSteals());
     } while (performLifelineSteals());
 
-    console.println("going to sleep, workerCount=" + workerCount + ", state=" + state);
-
-    // Only for debugging, print out results of this place
-    console.println(
-        "intraPlaceQueue.result="
-            + intraPlaceQueue.getResult()
-            + ", taskCount="
-            + intraPlaceQueue.getCurrentTaskCount());
-    console.println(
-        "interPlaceQueue.result="
-            + interPlaceQueue.getResult()
-            + ", taskCount="
-            + interPlaceQueue.getCurrentTaskCount());
-    for (final WorkerBag wb : workerBags) {
-      console.println(
-          "workbag.id="
-              + wb.workerId
-              + ", wb.bag.result="
-              + wb.bag.getResult()
-              + ", taskCount="
-              + wb.bag.getCurrentTaskCount());
+    if (Configuration.CONFIG_APGAS_ELASTIC.get().equals(Configuration.APGAS_ELASTIC_EVOLVING)) {
+      final int _myid = here().id;
+      immediateAsyncAt(
+          place(0),
+          () -> {
+            GlobalRuntimeImpl.getRuntime().EVOLVING.placeActiveRef.get().put(_myid, false);
+          });
     }
+
+    console.println("going to sleep, workerCount=" + workerCount);
 
     // Shutdown the lifelineAnswerThread and the tuner thread
     shutdown = true; // Flag used to signal to the activities they need to
@@ -1589,7 +1666,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
     final int h = HOME.id;
     final B loot = loot();
     console.println(
-        "received steal request from "
+        "Received steal request from "
             + thief
             + ", loot().size="
             + (loot == null ? "0" : loot.getCurrentTaskCount())
@@ -1601,7 +1678,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
       logger.lifelineStealsReceived.incrementAndGet();
 
       if (loot == null) {
-        // Steal does not immediately succeeds
+        // Steal does not immediately succeed
         // The lifeline is registered to answer it later.
         lifelineThieves.offer(thief);
         notifyWaitingThief(thief, waitLatch);
@@ -1864,7 +1941,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
          * 0. Should this place be shutdown?
          */
         if (mallShutdown.get()) {
-          console.println("this worker (" + workerBag.workerId + ") stops now because of mall");
+          console.println("This worker (" + workerBag.workerId + ") stops now because of mall");
           // mall: dirty fix
           logger.workerStealing(); // The worker is now stealing
           stopWorker(workerBag, -3);
@@ -1963,7 +2040,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
         if (Configuration.CONFIG_APGAS_CONSOLEPRINTER.get()) {
           // print only every XX seconds
           final long now = System.nanoTime();
-          if (((now - lastPrint[myWorkerID]) / 1e9) > 4) {
+          if (((now - lastPrint[myWorkerID]) / 1e9) > 2) {
             lastPrint[myWorkerID] = now;
             console.println(
                 "workerID="
@@ -1977,11 +2054,7 @@ public class GLBcomputer<R extends Fold<R> & Serializable, B extends Bag<B, R> &
                     + ", interPlaceQueue="
                     + interPlaceQueue.getCurrentTaskCount()
                     + ", workerCount="
-                    + workerCount
-                    + ", lifelineThieves="
-                    + lifelineThieves.toString()
-                    + ", bag.isSplittable="
-                    + bag.isSplittable());
+                    + workerCount);
           }
         }
 

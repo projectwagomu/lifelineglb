@@ -23,7 +23,7 @@ import java.security.NoSuchAlgorithmException;
  *
  * <p>This class is an adaptation from the <a href=
  * "https://github.com/x10-lang/apgas/blob/master/apgas.examples/src/apgas/examples/UTS.java">apgas.examples.UTS</a>
- * class to fit the {@link Bag} interface for the multithreaded global load balaner. The result
+ * class to fit the {@link Bag} interface for the multithreaded global load balancer. The result
  * returned by {@link MultiworkerUTS} is the total number of nodes explored, using the {@link
  * LongSum} class.
  *

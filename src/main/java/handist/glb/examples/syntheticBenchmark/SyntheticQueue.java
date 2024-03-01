@@ -22,8 +22,12 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
   /** Serial Version UID */
   private static final long serialVersionUID = -7797377631042311713L;
 
-  public SyntheticQueue(final long durationVariance, final long maxChildren, boolean isStatic) {
-    super(durationVariance, maxChildren, isStatic);
+  public SyntheticQueue(
+      final long durationVariance,
+      final long maxChildren,
+      boolean isStatic,
+      final long totalDuration) {
+    super(durationVariance, maxChildren, isStatic, totalDuration);
   }
 
   @Override
@@ -61,7 +65,10 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
     localTasksPerWorker = tasksPerWorker;
 
     for (long i = 0; i < localTasksPerWorker; ++i) {
-      tasks.addLast(new SyntheticTask(taskBallast, taskDuration));
+      // The variables taskID, totalNumberOfTasks,
+      // realDepth and branch are only needed for dynamic variant of synth evotree
+      // so they are 0/false if generated static
+      tasks.addLast(new SyntheticTask(taskBallast, taskDuration, 0, 0, 0, false));
     }
     System.out.println(
         here()
@@ -109,7 +116,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
   public SyntheticQueue split(boolean takeAll) {
     int nStolen = Math.max(tasks.size() / 2, 1);
     if (tasks.size() < 2 && !takeAll) {
-      return new SyntheticQueue(durationVariance, maxChildren, isStatic);
+      return new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration);
     }
 
     // StaticSyn performs better if all tasks are taken out
@@ -121,7 +128,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
     }
 
     final SyntheticQueue syntheticQueue =
-        new SyntheticQueue(durationVariance, maxChildren, isStatic);
+        new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration);
     final SyntheticTask[] fromFirst = tasks.getFromFirst(nStolen);
     for (final SyntheticTask t : fromFirst) {
       syntheticQueue.tasks.addFirst(t);

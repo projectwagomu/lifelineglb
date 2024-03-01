@@ -39,6 +39,17 @@ public final class GLBMultiWorkerConfiguration<T> {
 
   public static final String GLB_MULTIWORKER_WORKERPERPLACE_PROPERTY =
       "glb.multiworker.workerperplace";
+
+  public static final String GLB_SYNTH_TREE_PROPERTY = "glb.synth";
+
+  public static final String GLB_SYNTH_BRANCH_PROPERTY = "glb.synth.branch";
+
+  public static final GLBMultiWorkerConfiguration<String> GLBOPTION_SYNTH_TREE =
+      new GLBMultiWorkerConfiguration<>(GLB_SYNTH_TREE_PROPERTY, "tree", String.class);
+
+  public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_SYNTH_BRANCH =
+      new GLBMultiWorkerConfiguration<>(GLB_SYNTH_BRANCH_PROPERTY, 5000, Integer.class);
+
   public static final GLBMultiWorkerConfiguration<Integer>
       GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS =
           new GLBMultiWorkerConfiguration<>(
@@ -55,6 +66,7 @@ public final class GLBMultiWorkerConfiguration<T> {
 
   public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_MULTIWORKER_W =
       new GLBMultiWorkerConfiguration<>(GLB_MULTIWORKER_W_PROPERTY, 3, Integer.class);
+
   public static final GLBMultiWorkerConfiguration<Integer> GLBOPTION_MULTIWORKER_WORKERPERPLACE =
       new GLBMultiWorkerConfiguration<>(
           GLB_MULTIWORKER_WORKERPERPLACE_PROPERTY,
@@ -112,6 +124,8 @@ public final class GLBMultiWorkerConfiguration<T> {
     allConfigs.add(GLBOPTION_MULTIWORKER_LIFELINESTRATEGY);
     allConfigs.add(GLBOPTION_MULTIWORKER_WORKERPERPLACE);
     allConfigs.add(GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS);
+    allConfigs.add(GLBOPTION_SYNTH_TREE);
+    if (GLBOPTION_SYNTH_TREE.get().equals("evotree")) allConfigs.add(GLBOPTION_SYNTH_BRANCH);
 
     final StringBuilder stringBuilder = new StringBuilder();
     stringBuilder.append("GLB Multiworker config on ");

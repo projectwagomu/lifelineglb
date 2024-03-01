@@ -33,8 +33,7 @@ public class UTSResults {
         4230646601L,
         16922208327L,
         67688164184L,
-        270751679750L,
-        1083006612025L
+        270751679750L
       };
 
   public static long getResult(int index) {

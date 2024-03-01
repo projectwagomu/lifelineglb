@@ -233,7 +233,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
 
   public int pollFirst() {
     int h = head;
-    @SuppressWarnings("unchecked")
     int result = elements[h];
     // Element is null if deque empty
     head = (h + 1) & (elements.length - 1);
@@ -242,7 +241,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
 
   public int pollLast() {
     int t = (tail - 1) & (elements.length - 1);
-    @SuppressWarnings("unchecked")
     int result = elements[t];
     tail = t;
     return result;
@@ -252,7 +250,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
    * @throws NoSuchElementException {@inheritDoc}
    */
   public int getFirst() {
-    @SuppressWarnings("unchecked")
     int result = elements[head];
     return result;
   }
@@ -261,37 +258,18 @@ public class MyIntegerDeque implements Cloneable, Serializable {
    * @throws NoSuchElementException {@inheritDoc}
    */
   public int getLast() {
-    @SuppressWarnings("unchecked")
     int result = elements[(tail - 1) & (elements.length - 1)];
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public int peekFirst() {
     // elements[head] is null if deque empty
     return elements[head];
   }
 
-  @SuppressWarnings("unchecked")
   public int peekLast() {
     return elements[(tail - 1) & (elements.length - 1)];
   }
-
-  // *** Queue methods ***
-
-  /**
-   * Inserts the specified element at the end of this deque.
-   *
-   * <p>This method is equivalent to {@link #addLast}.
-   *
-   * @param e the element to add
-   * @return {@code true} (as specified by {@link Collection#add})
-   * @throws NullPointerException if the specified element is null
-   */
-  //    public boolean add(int e) {
-  //        addLast(e);
-  //        return true;
-  //    }
 
   /**
    * Inserts the specified element at the end of this deque.
@@ -405,7 +383,8 @@ public class MyIntegerDeque implements Cloneable, Serializable {
    *
    * @return true if elements moved backwards
    */
-  private boolean delete(int i) {
+  @SuppressWarnings("unused")
+private boolean delete(int i) {
     checkInvariants();
     final int[] elements = this.elements;
     final int mask = elements.length - 1;
@@ -525,7 +504,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
    *     the runtime type of every element in this deque
    * @throws NullPointerException if the specified array is null
    */
-  @SuppressWarnings("unchecked")
   public int[] toArray(int[] a) {
     int size = size();
     if (a.length < size) {
@@ -542,7 +520,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
    */
   public MyIntegerDeque clone() {
     try {
-      @SuppressWarnings("unchecked")
       MyIntegerDeque result = (MyIntegerDeque) super.clone();
       result.elements = Arrays.copyOf(elements, elements.length);
       return result;
@@ -604,7 +581,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
     return peekFromFirst(n, 0);
   }
 
-  @SuppressWarnings("unchecked")
   public int[] peekFromFirst(int n, int offset) {
     final int toCopy = Math.min(n, this.size() - offset);
     int[] result = new int[toCopy];
@@ -625,7 +601,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public int[] getFromFirst(int n) {
     int toCopy = Math.min(n, this.size());
     if (0 == toCopy) {
@@ -650,7 +625,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
   //    Top <-> end  <------> First <-> tail
   //    Bottom <-> start  <------> Last <-> head
 
-  @SuppressWarnings("unchecked")
   public int[] peekFromLast(int n) {
     int toCopy = Math.min(n, this.elements.length);
     int[] result = new int[toCopy];
@@ -663,7 +637,6 @@ public class MyIntegerDeque implements Cloneable, Serializable {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   public int[] getFromLast(int n) {
     int toCopy = Math.min(n, this.elements.length);
     if (0 == toCopy) {

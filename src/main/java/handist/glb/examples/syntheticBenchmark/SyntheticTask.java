@@ -19,16 +19,41 @@ public class SyntheticTask implements Serializable {
   byte[] ballast;
   long depth;
   long duration;
+  long durationTree;
   long seed;
+  long taskID;
+  long totalNumberOfTasks;
+  long realDepth;
+  boolean branch;
 
-  public SyntheticTask(long ballastInBytes, long duration) {
+  public SyntheticTask(
+      long ballastInBytes,
+      long duration,
+      long taskID,
+      long totalNumberOfTasks,
+      long realDepth,
+      boolean branch) {
     ballast = new byte[(int) ballastInBytes];
     this.duration = duration;
+    this.taskID = taskID;
+    this.totalNumberOfTasks = totalNumberOfTasks;
+    this.realDepth = realDepth;
+    this.branch = branch;
   }
 
-  public SyntheticTask(long ballastInBytes, long seed, long depth, long duration) {
-    this(ballastInBytes, duration);
+  public SyntheticTask(
+      long ballastInBytes,
+      long seed,
+      long depth,
+      long duration,
+      long taskID,
+      long totalNumberOfTasks,
+      long realDepth,
+      boolean branch,
+      long durationTree) {
+    this(ballastInBytes, duration, taskID, totalNumberOfTasks, realDepth, branch);
     this.seed = seed;
     this.depth = depth;
+    this.durationTree = durationTree;
   }
 }
