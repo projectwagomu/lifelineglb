@@ -39,6 +39,7 @@ public class Synthetic implements Serializable {
   protected long taskBallast;
   protected long tasksPerWorker;
   protected long totalDuration;
+  protected int customStartPlaces;
   transient ThreadMXBean bean = ManagementFactory.getThreadMXBean();
 
   /*
@@ -50,12 +51,14 @@ public class Synthetic implements Serializable {
       final long durationVariance,
       final long maxChildren,
       boolean isStatic,
-      final long totalDuration) {
+      final long totalDuration,
+      final int customStartPlaces) {
     this.durationVariance = durationVariance;
     variance = durationVariance / 100.0f;
     this.maxChildren = maxChildren;
     this.isStatic = isStatic;
     this.totalDuration = totalDuration;
+    this.customStartPlaces = customStartPlaces;
   }
 
   private static int fibonacci(int a) {
@@ -243,7 +246,13 @@ public class Synthetic implements Serializable {
         GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
     final int totalWorkers;
     final long localTasksPerWorker;
-    totalWorkers = workerPerPlace * places().size();
+    int myPlaces;
+    if (customStartPlaces > 0) {
+      myPlaces = customStartPlaces;
+    } else {
+      myPlaces = places().size();
+    }
+    totalWorkers = workerPerPlace * myPlaces;
     localTasksPerWorker = tasksPerWorker;
 
     final long depth = findTreeSize(localTasksPerWorker);

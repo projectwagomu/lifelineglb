@@ -26,8 +26,9 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
       final long durationVariance,
       final long maxChildren,
       boolean isStatic,
-      final long totalDuration) {
-    super(durationVariance, maxChildren, isStatic, totalDuration);
+      final long totalDuration,
+      final int customStartPlaces) {
+    super(durationVariance, maxChildren, isStatic, totalDuration, customStartPlaces);
   }
 
   @Override
@@ -45,7 +46,8 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
     final int workerPerPlace =
         GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
     final int totalWorkers;
-    totalWorkers = workerPerPlace * places().size();
+    int myPlaces = places().size();
+    totalWorkers = workerPerPlace * myPlaces;
 
     final long taskCount = tasksPerWorker * totalWorkers;
     long taskDuration = (1000L * 1000L * totalDuration * totalWorkers) / taskCount;
@@ -116,7 +118,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
   public SyntheticQueue split(boolean takeAll) {
     int nStolen = Math.max(tasks.size() / 2, 1);
     if (tasks.size() < 2 && !takeAll) {
-      return new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration);
+      return new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration, customStartPlaces);
     }
 
     // StaticSyn performs better if all tasks are taken out
@@ -128,7 +130,7 @@ public class SyntheticQueue extends Synthetic implements Bag<SyntheticQueue, Lon
     }
 
     final SyntheticQueue syntheticQueue =
-        new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration);
+        new SyntheticQueue(durationVariance, maxChildren, isStatic, totalDuration, customStartPlaces);
     final SyntheticTask[] fromFirst = tasks.getFromFirst(nStolen);
     for (final SyntheticTask t : fromFirst) {
       syntheticQueue.tasks.addFirst(t);

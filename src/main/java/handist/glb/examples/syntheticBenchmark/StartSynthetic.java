@@ -32,6 +32,7 @@ public class StartSynthetic {
 
   static final long TASKSPERWORKER_DEFAULT = 1_000_000;
   static final long TOTALDURATION_DEFAULT = 50_000;
+  static final int CUSTOM_START_PLACES = -1;
 
   public static void main(String[] args) {
     ExampleHelper.printStartMessage(StartSynthetic.class.getName());
@@ -48,6 +49,9 @@ public class StartSynthetic {
         Long.parseLong(cmd.getOptionValue("g", String.valueOf(TOTALDURATION_DEFAULT)));
     final long taskDurationVariance =
         Long.parseLong(cmd.getOptionValue("u", String.valueOf(TASK_DURATION_VARIANCE_DEFAULT)));
+    // TODO works currently only with dynamic option
+    final int customStartPlaces =
+        Integer.parseInt(cmd.getOptionValue("s", String.valueOf(CUSTOM_START_PLACES)));
 
     System.out.println(
         "Synthetic config:\n"
@@ -67,15 +71,18 @@ public class StartSynthetic {
             + "\n"
             + "  taskDurationVariance="
             + taskDurationVariance
-            + "\n");
+            + "\n"
+            + "  customStartPlaces="
+            + customStartPlaces
+            + "\n"
+    );
 
     final int repetitions =
         GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_BENCHMARKREPETITIONS.get();
 
     final int workerPerPlace =
         GLBMultiWorkerConfiguration.GLBOPTION_MULTIWORKER_WORKERPERPLACE.get();
-    final int wholeNumPlaces;
-    wholeNumPlaces = places().size();
+    final int wholeNumPlaces = places().size();
 
     long expectedResult = 0;
 
@@ -91,7 +98,7 @@ public class StartSynthetic {
         final SerializableSupplier<SyntheticQueue> workerInitializer =
             () -> {
               final SyntheticQueue sq =
-                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration);
+                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration, customStartPlaces);
               sq.initStatic(ballast, tasksPerWorker, totalDuration, taskDurationVariance);
               return sq;
             };
@@ -99,7 +106,7 @@ public class StartSynthetic {
         final SerializableSupplier<SyntheticQueue> queueInitializer =
             () -> {
               final SyntheticQueue s =
-                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration);
+                  new SyntheticQueue(taskDurationVariance, 0, true, totalDuration, customStartPlaces);
               return s;
             };
 
@@ -110,7 +117,7 @@ public class StartSynthetic {
       } else { // dynamic
         // maxChildren=0 will be replaced by initDynamic
         final SyntheticQueue syntheticQueue =
-            new SyntheticQueue(taskDurationVariance, 0, false, totalDuration);
+            new SyntheticQueue(taskDurationVariance, 0, false, totalDuration, customStartPlaces);
         expectedResult = syntheticQueue.initDynamic(tasksPerWorker, totalDuration, ballast);
         final long _maxChildren = syntheticQueue.maxChildren;
 
@@ -120,7 +127,7 @@ public class StartSynthetic {
             glb.computeDynamic(
                 syntheticQueue,
                 () -> new LongSum(0),
-                () -> new SyntheticQueue(taskDurationVariance, _maxChildren, false, totalDuration));
+                () -> new SyntheticQueue(taskDurationVariance, _maxChildren, false, totalDuration, customStartPlaces));
       }
 
       System.out.println(
@@ -158,6 +165,7 @@ public class StartSynthetic {
         "t", true, "Task count per worker (only used in static version) (Default 1_000_000)");
     options.addOption("g", true, "Total duration in milliseconds (Default 10_000)");
     options.addOption("u", true, "Task duration variance percentage (Default 0");
+    options.addOption("s", true, "customStartPlaces, works only with dynamic init");
 
     final CommandLineParser parser = new DefaultParser();
     CommandLine cmd = null;
